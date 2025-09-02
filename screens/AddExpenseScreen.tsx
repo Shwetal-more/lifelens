@@ -27,6 +27,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
   const [category, setCategory] = useState('');
   const [occasion, setOccasion] = useState('');
   const [emotion, setEmotion] = useState<MoodType>(MoodType.Neutral);
+  const [isUseful, setIsUseful] = useState(true);
   const [aiAdvice, setAiAdvice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -36,6 +37,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       setCategory(expenseToEdit.category);
       setOccasion(expenseToEdit.occasion);
       setEmotion(expenseToEdit.emotion);
+      setIsUseful(expenseToEdit.isUseful);
     }
   }, [isEditMode, expenseToEdit]);
 
@@ -46,6 +48,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       category,
       occasion,
       emotion,
+      isUseful,
     };
     if (!expenseData.amount || !expenseData.category) return;
     
@@ -137,6 +140,23 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
               ))}
             </select>
           </div>
+          <div className="flex items-center justify-between bg-card p-3 rounded-xl shadow-soft-inset">
+            <label htmlFor="isUsefulToggle" className="font-medium text-secondary flex-grow cursor-pointer">
+                {isUseful ? 'Essential Spending' : 'Indulgence'}
+            </label>
+            <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                <input 
+                    type="checkbox" 
+                    name="isUsefulToggle" 
+                    id="isUsefulToggle" 
+                    className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                    checked={isUseful}
+                    onChange={() => setIsUseful(!isUseful)}
+                />
+                <label htmlFor="isUsefulToggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+            </div>
+        </div>
+
           <div className="flex items-center justify-between pt-6">
             <div>
               {isEditMode && (
@@ -160,6 +180,15 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
           </div>
         </form>
       )}
+       <style>{`
+        .toggle-checkbox:checked {
+          right: 0;
+          border-color: #1DE9B6; /* accent */
+        }
+        .toggle-checkbox:checked + .toggle-label {
+          background-color: #1DE9B6; /* accent */
+        }
+      `}</style>
     </div>
   );
 };

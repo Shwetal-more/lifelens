@@ -49,6 +49,7 @@ export interface Expense {
   occasion: string;
   emotion: MoodType;
   date: Date;
+  isUseful: boolean;
 }
 
 export interface MoodEntry {

@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Expense, MoodEntry, UserProfile } from '../types';
 import InsightChart from '../components/InsightChart';
+import SpendingBreakdownChart from '../components/SpendingBreakdownChart';
+import CategoryPieChart from '../components/CategoryPieChart';
 import { getFinancialInsight } from '../services/geminiService';
 
 interface InsightsScreenProps {
@@ -12,23 +14,56 @@ interface InsightsScreenProps {
 const InsightsScreen: React.FC<InsightsScreenProps> = ({ expenses, moods, userProfile }) => {
   const [insight, setInsight] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [period, setPeriod] = useState<'week' | 'month'>('week');
+
+  const filteredExpenses = useMemo(() => {
+    const now = new Date();
+    const daysToFilter = period === 'week' ? 7 : 30;
+    const cutoffDate = new Date(now.setDate(now.getDate() - daysToFilter));
+    return expenses.filter(e => e.date >= cutoffDate);
+  }, [expenses, period]);
 
   useEffect(() => {
     const fetchInsight = async () => {
       setIsLoading(true);
-      const result = await getFinancialInsight(expenses);
+      const result = await getFinancialInsight(filteredExpenses);
       setInsight(result);
       setIsLoading(false);
     };
-    fetchInsight();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expenses]);
+    if (filteredExpenses.length > 0) {
+        fetchInsight();
+    } else {
+        setInsight("Not enough data for this period. Keep tracking!");
+        setIsLoading(false);
+    }
+  }, [filteredExpenses]);
+  
+  const PeriodButton: React.FC<{
+    label: string, 
+    value: 'week' | 'month', 
+    current: 'week' | 'month', 
+    onClick: (p: 'week' | 'month') => void 
+  }> = ({ label, value, current, onClick }) => (
+    <button 
+      onClick={() => onClick(value)} 
+      className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 ${
+        current === value ? 'bg-primary text-white' : 'bg-transparent text-secondary hover:text-primary'
+      }`}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div className="p-4 pt-8 space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-primary">Your Insights</h1>
         <p className="text-secondary mt-1">Discover patterns in your financial life.</p>
+      </div>
+
+      <div className="flex justify-center bg-card p-1 rounded-full shadow-card w-max mx-auto">
+        <PeriodButton label="Last 7 Days" value="week" current={period} onClick={setPeriod} />
+        <PeriodButton label="Last 30 Days" value="month" current={period} onClick={setPeriod} />
       </div>
 
       <div className="bg-card p-5 rounded-2xl shadow-card">
@@ -42,10 +77,29 @@ const InsightsScreen: React.FC<InsightsScreenProps> = ({ expenses, moods, userPr
         </div>
       </div>
 
-      <div className="bg-card p-4 rounded-2xl shadow-card">
-        <h2 className="text-lg font-bold text-primary mb-4 text-center">Spending vs Mood</h2>
-        <InsightChart expenses={expenses} moods={moods} userProfile={userProfile}/>
-      </div>
+      {filteredExpenses.length > 0 ? (
+        <>
+            <div className="bg-card p-4 rounded-2xl shadow-card">
+                <h2 className="text-lg font-bold text-primary mb-4 text-center">Essential vs. Indulgence</h2>
+                <SpendingBreakdownChart expenses={filteredExpenses} userProfile={userProfile} />
+            </div>
+            
+            <div className="bg-card p-4 rounded-2xl shadow-card">
+                <h2 className="text-lg font-bold text-primary mb-4 text-center">Spending by Category</h2>
+                <CategoryPieChart expenses={filteredExpenses} userProfile={userProfile} />
+            </div>
+
+            <div className="bg-card p-4 rounded-2xl shadow-card">
+                <h2 className="text-lg font-bold text-primary mb-4 text-center">Spending vs Mood</h2>
+                <InsightChart expenses={filteredExpenses} moods={moods} userProfile={userProfile}/>
+            </div>
+        </>
+      ) : (
+        <div className="bg-card p-8 rounded-2xl shadow-card text-center">
+            <h3 className="text-xl font-semibold text-primary">No Data for This Period</h3>
+            <p className="text-secondary mt-2">Try logging more activities or selecting a different time frame to see your insights.</p>
+        </div>
+      )}
     </div>
   );
 };

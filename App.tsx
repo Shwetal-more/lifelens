@@ -44,9 +44,10 @@ const App: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   
   const [expenses, setExpenses] = useState<Expense[]>([
-    { id: '1', amount: 75.50, category: 'Food', occasion: 'Dinner with friends', emotion: MoodType.Happy, date: new Date(Date.now() - 86400000 * 2) },
-    { id: '2', amount: 120.00, category: 'Shopping', occasion: 'New shoes', emotion: MoodType.Stressed, date: new Date(Date.now() - 86400000 * 1) },
-    { id: '3', amount: 15.00, category: 'Transport', occasion: 'Commute', emotion: MoodType.Neutral, date: new Date() },
+    { id: '1', amount: 75.50, category: 'Food', occasion: 'Dinner with friends', emotion: MoodType.Happy, date: new Date(Date.now() - 86400000 * 2), isUseful: false },
+    { id: '2', amount: 120.00, category: 'Shopping', occasion: 'New shoes', emotion: MoodType.Stressed, date: new Date(Date.now() - 86400000 * 1), isUseful: false },
+    { id: '3', amount: 15.00, category: 'Transport', occasion: 'Commute', emotion: MoodType.Neutral, date: new Date(), isUseful: true },
+    { id: '4', amount: 45.00, category: 'Groceries', occasion: 'Weekly shop', emotion: MoodType.Neutral, date: new Date(), isUseful: true },
   ]);
 
   const [moods, setMoods] = useState<MoodEntry[]>([
