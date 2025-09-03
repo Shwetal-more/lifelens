@@ -3,6 +3,7 @@ import { Expense, MoodEntry, UserProfile } from '../types';
 import InsightChart from '../components/InsightChart';
 import SpendingBreakdownChart from '../components/SpendingBreakdownChart';
 import CategoryPieChart from '../components/CategoryPieChart';
+import MoodTrendChart from '../components/MoodTrendChart';
 import { getFinancialInsight } from '../services/geminiService';
 
 interface InsightsScreenProps {
@@ -15,13 +16,35 @@ const InsightsScreen: React.FC<InsightsScreenProps> = ({ expenses, moods, userPr
   const [insight, setInsight] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  const allCategories = useMemo(() => Array.from(new Set(expenses.map(e => e.category))), [expenses]);
+
+  useEffect(() => {
+    // Select all categories by default when the component mounts or categories change
+    setSelectedCategories(allCategories);
+  }, [allCategories]);
 
   const filteredExpenses = useMemo(() => {
     const now = new Date();
     const daysToFilter = period === 'week' ? 7 : 30;
-    const cutoffDate = new Date(now.setDate(now.getDate() - daysToFilter));
-    return expenses.filter(e => e.date >= cutoffDate);
-  }, [expenses, period]);
+    const cutoffDate = new Date(new Date().setDate(now.getDate() - daysToFilter));
+    
+    return expenses.filter(e => {
+        const expenseDate = new Date(e.date);
+        const isWithinDate = expenseDate >= cutoffDate;
+        const isInCategory = selectedCategories.length === 0 || selectedCategories.includes(e.category);
+        return isWithinDate && isInCategory;
+    });
+  }, [expenses, period, selectedCategories]);
+
+  const filteredMoods = useMemo(() => {
+    const now = new Date();
+    const daysToFilter = period === 'week' ? 7 : 30;
+    const cutoffDate = new Date(new Date().setDate(now.getDate() - daysToFilter));
+    return moods.filter(m => new Date(m.date) >= cutoffDate);
+  }, [moods, period]);
+
 
   useEffect(() => {
     const fetchInsight = async () => {
@@ -33,10 +56,18 @@ const InsightsScreen: React.FC<InsightsScreenProps> = ({ expenses, moods, userPr
     if (filteredExpenses.length > 0) {
         fetchInsight();
     } else {
-        setInsight("Not enough data for this period. Keep tracking!");
+        setInsight("Not enough data for this period/filter. Keep tracking!");
         setIsLoading(false);
     }
   }, [filteredExpenses]);
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
   
   const PeriodButton: React.FC<{
     label: string, 
@@ -61,10 +92,31 @@ const InsightsScreen: React.FC<InsightsScreenProps> = ({ expenses, moods, userPr
         <p className="text-secondary mt-1">Discover patterns in your financial life.</p>
       </div>
 
-      <div className="flex justify-center bg-card p-1 rounded-full shadow-card w-max mx-auto">
-        <PeriodButton label="Last 7 Days" value="week" current={period} onClick={setPeriod} />
-        <PeriodButton label="Last 30 Days" value="month" current={period} onClick={setPeriod} />
+      <div className="bg-card p-2 rounded-2xl shadow-card space-y-3">
+        <div className="flex justify-center bg-background p-1 rounded-full w-max mx-auto">
+            <PeriodButton label="Last 7 Days" value="week" current={period} onClick={setPeriod} />
+            <PeriodButton label="Last 30 Days" value="month" current={period} onClick={setPeriod} />
+        </div>
+        <div>
+            <h3 className="text-sm font-bold text-primary text-center mb-2">Filter by Category</h3>
+            <div className="flex flex-wrap justify-center gap-2 px-2">
+                {allCategories.map(cat => (
+                    <button 
+                        key={cat}
+                        onClick={() => handleCategoryToggle(cat)}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-colors ${
+                            selectedCategories.includes(cat)
+                            ? 'bg-accent border-accent text-white'
+                            : 'bg-transparent border-gray-200 text-secondary hover:border-secondary'
+                        }`}
+                    >
+                        {cat}
+                    </button>
+                ))}
+            </div>
+        </div>
       </div>
+
 
       <div className="bg-card p-5 rounded-2xl shadow-card">
         <h2 className="text-lg font-bold text-primary mb-2">Secret Pattern Unlocked!</h2>
@@ -77,8 +129,13 @@ const InsightsScreen: React.FC<InsightsScreenProps> = ({ expenses, moods, userPr
         </div>
       </div>
 
-      {filteredExpenses.length > 0 ? (
+      {filteredExpenses.length > 0 || filteredMoods.length > 0 ? (
         <>
+            <div className="bg-card p-4 rounded-2xl shadow-card">
+                <h2 className="text-lg font-bold text-primary mb-4 text-center">Mood Trend</h2>
+                <MoodTrendChart moods={filteredMoods} />
+            </div>
+
             <div className="bg-card p-4 rounded-2xl shadow-card">
                 <h2 className="text-lg font-bold text-primary mb-4 text-center">Essential vs. Indulgence</h2>
                 <SpendingBreakdownChart expenses={filteredExpenses} userProfile={userProfile} />

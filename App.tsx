@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile } from './types';
+import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
 import SignUpLoginScreen from './screens/SignUpLoginScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
@@ -9,10 +9,13 @@ import MoodTrackerScreen from './screens/MoodTrackerScreen';
 import NotesScreen from './screens/NotesScreen';
 import InsightsScreen from './screens/InsightsScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import FutureMeScreen from './screens/FutureMeScreen';
+import FinancialGoalsScreen from './screens/FinancialGoalsScreen';
+import AddFinancialGoalScreen from './screens/AddFinancialGoalScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
 import BottomNav from './components/BottomNav';
 import { getDailyChallenge } from './services/geminiService';
+// FIX: Import FutureMeScreen to allow rendering it.
+import FutureMeScreen from './screens/FutureMeScreen';
 
 const isSameDay = (d1: Date, d2: Date) => {
     return d1.getFullYear() === d2.getFullYear() &&
@@ -57,7 +60,7 @@ const App: React.FC = () => {
   ]);
   
   const [notes, setNotes] = useState<Note[]>([]);
-  const [futureMessages, setFutureMessages] = useState<Note[]>([]);
+  const [goals, setGoals] = useState<FinancialGoal[]>([]);
 
   // Editing state
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
@@ -86,6 +89,10 @@ const App: React.FC = () => {
     if (savedAchievements) {
         const parsedAchievements = JSON.parse(savedAchievements);
         setAchievements(parsedAchievements);
+    }
+     const savedGoals = localStorage.getItem('financialGoals');
+    if (savedGoals) {
+      setGoals(JSON.parse(savedGoals));
     }
 
     const fetchChallenge = async () => {
@@ -226,10 +233,12 @@ const App: React.FC = () => {
     setCurrentScreen(Screen.Home);
   }, []);
 
-  const addFutureMessage = useCallback((content: string) => {
-    setFutureMessages(prev => [...prev, { id: Date.now().toString(), content, date: new Date() }]);
-    setCurrentScreen(Screen.Home);
-  }, []);
+  const addFinancialGoal = useCallback((goalData: Omit<FinancialGoal, 'id'>) => {
+    const newGoals = [...goals, { ...goalData, id: Date.now().toString() }];
+    setGoals(newGoals);
+    localStorage.setItem('financialGoals', JSON.stringify(newGoals));
+    setCurrentScreen(Screen.FinancialGoals);
+  }, [goals]);
 
   const growthScore = expenses.length + moods.length;
   const expenseToEdit = expenses.find(e => e.id === editingExpenseId) || null;
@@ -258,10 +267,15 @@ const App: React.FC = () => {
         return <InsightsScreen userProfile={userProfile} expenses={expenses} moods={moods} />;
       case Screen.Profile:
         return <ProfileScreen userProfile={userProfile} settings={notificationSettings} onSettingsChange={updateNotificationSettings} onNavigate={(screen) => setCurrentScreen(screen)} />;
-      case Screen.FutureMe:
-        return <FutureMeScreen onSave={addFutureMessage} onCancel={() => setCurrentScreen(Screen.Home)} />;
+      case Screen.FinancialGoals:
+        return <FinancialGoalsScreen goals={goals} onNavigate={setCurrentScreen} />;
+      case Screen.AddFinancialGoal:
+        return <AddFinancialGoalScreen onSave={addFinancialGoal} onCancel={() => setCurrentScreen(Screen.FinancialGoals)} userProfile={userProfile} />;
       case Screen.Achievements:
         return <AchievementsScreen badges={achievements} onBack={() => setCurrentScreen(Screen.Profile)} />;
+      // FIX: Add case for FutureMe screen to handle rendering.
+      case Screen.FutureMe:
+        return <FutureMeScreen onSave={addNote} onCancel={() => setCurrentScreen(Screen.Home)} />;
       default:
         return <HomeScreen userProfile={userProfile} expenses={expenses} moods={moods} onNavigate={setCurrentScreen} onEditExpense={handleStartEditExpense} streak={streak} challenge={challenge} growthScore={growthScore} showConfetti={showConfetti} />;
     }

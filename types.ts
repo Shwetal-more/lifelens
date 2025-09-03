@@ -8,8 +8,11 @@ export enum Screen {
   Notes = 'NOTES',
   Insights = 'INSIGHTS',
   Profile = 'PROFILE',
-  FutureMe = 'FUTURE_ME',
+  FinancialGoals = 'FINANCIAL_GOALS',
+  AddFinancialGoal = 'ADD_FINANCIAL_GOAL',
   Achievements = 'ACHIEVEMENTS',
+  // FIX: Added FutureMe screen to the enum to fix reference error in HomeScreen.tsx
+  FutureMe = 'FUTURE_ME',
 }
 
 export enum MoodType {
@@ -63,4 +66,13 @@ export interface Note {
   id: string;
   content: string;
   date: Date;
+}
+
+export interface FinancialGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  savedAmount: number;
+  icon: string;
+  targetDate: string;
 }
