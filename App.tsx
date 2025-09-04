@@ -91,7 +91,7 @@ const App: React.FC = () => {
   ]);
   
   const [gameState, setGameState] = useState<GameState>({ spentBrixCoins: -1000, inventory: [], placedBrix: [], revealedCells: [
-    {x:12, y:6}, {x:11, y:7}, {x:12, y:7}, {x:13, y:7}, {x:12, y:8} // Start area revealed
+    {x: 4, y: 19}, {x: 3, y: 19}, {x: 5, y: 19}, {x: 4, y: 18} // Start area revealed at Shipwreck
   ], quests: [] });
 
   // Editing state
@@ -169,8 +169,8 @@ const App: React.FC = () => {
     const savedGameState = localStorage.getItem('gameState');
     if (savedGameState) {
         const loadedState = JSON.parse(savedGameState);
-        if (!loadedState.revealedCells) {
-            loadedState.revealedCells = [{x:12, y:6}, {x:11, y:7}, {x:12, y:7}, {x:13, y:7}, {x:12, y:8}];
+        if (!loadedState.revealedCells || loadedState.revealedCells.length === 0) {
+            loadedState.revealedCells = [{x: 4, y: 19}, {x: 3, y: 19}, {x: 5, y: 19}, {x: 4, y: 18}];
         }
         setGameState(loadedState);
     }
@@ -350,8 +350,7 @@ const App: React.FC = () => {
             inventory: [],
             placedBrix: [],
             revealedCells: [
-                {x:12, y:6}, {x:11, y:7}, {x:12, y:7}, {x:13, y:7}, 
-                {x:12, y:8}, {x:11, y:6}, {x:13, y:6}, {x:12, y:5}
+                {x: 4, y: 19}, {x: 3, y: 19}, {x: 5, y: 19}, {x: 4, y: 18}
             ],
             quests: [],
         };

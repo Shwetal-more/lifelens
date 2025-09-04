@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { GameState, BrixComponent, Quest, DecisionChoice } from '../types';
 import { getPirateRiddle, getFinancialQuest, getGameIntroStory } from '../services/geminiService';
-import { SeaTile, BeachTile, GrasslandTile, ForestTile, SwampTile, MountainTile, TreasureMarkerTile, StartMarkerTile, DeadlySeaTile, MazeTile, FogTile } from '../components/MapTiles';
+import { SeaTile, BeachTile, GrasslandTile, ForestTile, SwampTile, MountainTile, TreasureMarkerTile, StartMarkerTile, DeadlySeaTile, MazeTile, FogTile, LighthouseTile, ShipwreckTile } from '../components/MapTiles';
 
 
 // --- ICONS ---
@@ -29,33 +29,43 @@ const brixCatalog: BrixComponent[] = [
   { id: 'treasure_chest', name: 'Lost Treasure', cost: 99999, asset: '💎', size: { width: 1, height: 1 }, financialTip: "Ye found the treasure! True wealth ain't just gold, but the wisdom ye gained on the journey." },
 ];
 
-const MAP_WIDTH = 14;
-const MAP_HEIGHT = 13;
-const VIEWPORT_SIZE = 7;
+const MAP_WIDTH = 20;
+const MAP_HEIGHT = 20;
 
 const mapLayout = [
-    'WWWWFFFFFWWWWW', // 0
-    'WWLFFFFSFFWWWW', // 1 S = Saving
-    'WLLLLLLLLFWWWW', // 2
-    'WXLMMMMLLDWWWW', // 3 X = Treasure, M = Maze, D = Debt
-    'WLLMMMMLLPDWWW', // 4 P = Patience
-    'WWLMMMLLLBDWWW', // 5 B = Budgeting
-    'WWWWLIL LWWWHW', // 6 I = Investing, H = Start
-    'WWWWLLLSSWWWWW', // 7 S = Swamp
-    'WWWWLSSSSSMLWW', // 8 M = Means
-    'WWWWWLSSSSWWWW', // 9
-    'WWWWEEGLSSWWWW', // 10 E = Mountain / Emergency Fund, G = Goals
-    'WWWNEEEELLLWWW', // 11 N = Inflation
-    'WWWWEEEEWWWWWW', // 12
+// 0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16   17   18   19  // X ->
+  'WWWWWWWWWWWWWWWWWWWW', // 0 Y
+  'WWWWWWFFFFFWWWWWWWWW', // 1
+  'WWWWFFBBBBBFFWWWWWWW', // 2
+  'WWWLFFBBBBBFFLWWWWWW', // 3
+  'WWLFFEEEEBLLXMMMMWWWW', // 4
+  'WLLLLFEEELLMMMMSSSWW', // 5
+  'WLLLLFEEELLLLLSSSSXW', // 6
+  'WLLLDDDFFLLLLLLLLSWW', // 7
+  'WWLLDDDFFFLLLLLLLLLW', // 8
+  'WWLLLDDDFFLLLLLLWWWW', // 9
+  'WWWLLLLLLLLLLLLWWWWW', // 10
+  'WWXLLLLLLLLLLLLLWWWW', // 11
+  'WWLLPPLLLLLLLLLLWWWW', // 12
+  'WIIIPPPLWWWWLLLGWWWW', // 13
+  'WIIIIIPPPLWWLLLGGWWW', // 14
+  'WWIIIILLLLLLLLGGGWWW', // 15
+  'WWWIILLLLWWLLGGGWWWW', // 16
+  'WWWWWWLLLWWLGGGWWWWW', // 17
+  'WWWWWWLLWWLLNNWWWWWW', // 18
+  'WWWWWHWWWWLNNNNXWWWW', // 19
 ].join('').split('');
 
 const getQuestForLandmark = (char: string): Quest | null => {
     switch (char) {
+        // Active quests in the playable quadrant
+        case 'I': return { id: "landmark_investing", type: "decision", title: "Valley of Myths", description: "Choose yer venture, captain.", reward: { doubloons: 150, mapPieces: [{x:2,y:15}, {x:3,y:15}] }, data: { scenario: "A merchant offers two ventures: invest in his risky spice trade to an unknown land, or his reliable salt trade.", choices: [{ text: "The risky spice trade!", isCorrect: false, feedback: "Yer ship was lost at sea! High risk can mean high loss. Diversify yer treasure!" }, { text: "The reliable salt trade.", isCorrect: true, feedback: "A steady return! Reliable ventures build wealth over time." }] }, isCompleted: false };
+        case 'P': return { id: "landmark_patience", type: "riddle", title: "Lake o’ Lost Souls", description: "A ghostly figure offers a choice...", reward: { doubloons: 100, mapPieces: [{x:6,y:15}, {x:7,y:15}] }, data: { question: "I am a pirate's greatest virtue, more valuable than gold. With me, small seeds of coin grow into treasures untold. What am I?", answer: "Patience", options: ["Strength", "Patience", "A Map"] }, isCompleted: false };
+        
+        // Other landmark quests are disabled for now
         case 'B': return { id: "landmark_budgeting", type: "decision", title: "Cursed Canopy", description: "A wise captain sorts their gold!", reward: { doubloons: 100, mapPieces: [{x:6,y:5}] }, data: { scenario: "Ye find 100 doubloons. A storm is brewin' (Needs), a fine new hat is for sale (Wants), and yer ship needs reinforcing (Savings).", choices: [{ text: "Spend it all on the hat!", isCorrect: false, feedback: "A fine hat, but a leaky ship! A captain must provide for needs first." }, { text: "Split it: 50 for repairs, 30 for the storm, 20 for the hat.", isCorrect: true, feedback: "Yarr, a wise choice! Ye've budgeted for all possibilities!" }] }, isCompleted: false };
         case 'D': return { id: "landmark_debt", type: "riddle", title: "Bog o’ Bones", description: "Escape the skeleton tax collectors!", reward: { doubloons: 150, mapPieces: [{x:12,y:3}] }, data: { question: "What grows the longer ye ignore it, and sinks yer ship if unpaid?", answer: "Debt", options: ["Barnacles", "Debt", "Regret"] }, isCompleted: false };
         case 'E': return { id: "landmark_emergency", type: "decision", title: "Ashenroot Forest", description: "A sudden squall! Prepare for the worst.", reward: { doubloons: 100, mapPieces: [{x:5,y:10}] }, data: { scenario: "Yer main sail rips in a gale! Luckily, ye had a spare stowed away from a previous port.", choices: [{ text: "Use the spare sail.", isCorrect: true, feedback: "Good thinkin'! That's yer emergency fund in action, savin' the day!" }, { text: "Try to patch the old one.", isCorrect: false, feedback: "A risky move! A proper emergency fund prevents desperate measures." }] }, isCompleted: false };
-        case 'I': return { id: "landmark_investing", type: "decision", title: "Valley of Myths", description: "Choose yer venture, captain.", reward: { doubloons: 150, mapPieces: [{x:7,y:6}] }, data: { scenario: "A merchant offers two ventures: invest in his risky spice trade to an unknown land, or his reliable salt trade.", choices: [{ text: "The risky spice trade!", isCorrect: false, feedback: "Yer ship was lost at sea! High risk can mean high loss. Diversify yer treasure!" }, { text: "The reliable salt trade.", isCorrect: true, feedback: "A steady return! Reliable ventures build wealth over time." }] }, isCompleted: false };
-        case 'P': return { id: "landmark_patience", type: "riddle", title: "Lake o’ Lost Souls", description: "A ghostly figure offers a choice...", reward: { doubloons: 100, mapPieces: [{x:10,y:4}] }, data: { question: "I am a pirate's greatest virtue, more valuable than gold. With me, small seeds of coin grow into treasures untold. What am I?", answer: "Patience", options: ["Strength", "Patience", "A Map"] }, isCompleted: false };
         case 'G': return { id: "landmark_goals", type: "riddle", title: "Skullflame Lighthouse", description: "A guiding light in the dark.", reward: { doubloons: 100, mapPieces: [{x:7,y:10}] }, data: { question: "I am a treasure ye cannot hold, a destination for the bold. I guide yer spendin' and yer savin', the grand prize ye be cravin'. What am I?", answer: "A Goal", options: ["A Star", "A Goal", "A Captain"] }, isCompleted: false };
         case 'S': return { id: "landmark_saving", type: "riddle", title: "Weeping Maiden’s Fall", description: "Every drop counts...", reward: { doubloons: 100, mapPieces: [{x:7,y:1}] }, data: { question: "I am a river flowin' slow, from many small doubloons I grow. A mighty ocean I can be, if ye keep on feedin' me. What am I?", answer: "Savings", options: ["A Creek", "Ambition", "Savings"] }, isCompleted: false };
         default: return null;
@@ -88,18 +98,18 @@ const getTerrainTile = (terrainChar: string) => {
         case 'W': return <SeaTile />;
         case 'L': return <GrasslandTile />;
         case 'F': return <ForestTile />;
-        case 'M': return <MazeTile />;
-        case 'S': return <SwampTile />;
-        case 'E': return <MountainTile />;
         case 'X': return <TreasureMarkerTile />;
-        case 'H': return <StartMarkerTile />;
+        case 'H': return <ShipwreckTile />;
         case 'D': return <DeadlySeaTile />;
-        // Landmarks using existing tiles
+        // Landmark tiles
         case 'B': return <ForestTile />;   // Budgeting
+        case 'E': return <ForestTile />;   // Emergency
         case 'I': return <MountainTile />; // Investing
         case 'P': return <SwampTile />;    // Patience
-        case 'G': return <StartMarkerTile />; // Goals
-        case 'N': return <MountainTile />; // Inflation (on a volcano)
+        case 'G': return <LighthouseTile />; // Goals
+        case 'N': return <MountainTile />; // Inflation
+        case 'M': return <GrasslandTile />;// Means
+        case 'S': return <MountainTile />; // Saving (Waterfall)
         default: return <GrasslandTile />;
     }
 };
@@ -134,14 +144,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ brixCoins, gameState, onUpdateG
   const [activeTimer, setActiveTimer] = useState(0); // For active quest modal
   const [cooldownTimer, setCooldownTimer] = useState(0); // For main screen display
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   
-  const viewportCenter = useMemo(() => {
-    if (gameState.revealedCells.length === 0) return {x: 12, y: 7};
-    const lastRevealed = gameState.revealedCells[gameState.revealedCells.length - 1];
-    return lastRevealed;
-  }, [gameState.revealedCells]);
-
   const currentQuest = useMemo(() => gameState.quests.find(q => !q.isCompleted), [gameState.quests]);
 
   useEffect(() => {
@@ -236,10 +239,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ brixCoins, gameState, onUpdateG
 
       if (isRiddle) {
           const riddleData = await getPirateRiddle();
-          newQuestData = { ...newQuestData, type: 'riddle', title: 'A Pirate\'s Riddle', description: "The wind whispers a question...", reward: { doubloons: 100, mapPieces: [{x:10,y:6}, {x:11,y:6}]}, data: riddleData };
+          newQuestData = { ...newQuestData, type: 'riddle', title: 'A Pirate\'s Riddle', description: "The wind whispers a question...", reward: { doubloons: 100, mapPieces: [{x:1,y:18}, {x:2,y:18}]}, data: riddleData };
       } else {
           const financialData = await getFinancialQuest();
-          newQuestData = { ...newQuestData, type: 'decision', title: 'A Captain\'s Choice', description: "A true captain's worth is in their choices.", reward: { doubloons: 150, mapPieces: [{x:7,y:2}, {x:8,y:2}] }, data: financialData };
+          newQuestData = { ...newQuestData, type: 'decision', title: 'A Captain\'s Choice', description: "A true captain's worth is in their choices.", reward: { doubloons: 150, mapPieces: [{x:6,y:18}, {x:7,y:18}] }, data: financialData };
       }
       onUpdateGameState({ ...gameState, quests: [...currentQuests, newQuestData as Quest] });
       setIsGeneratingQuest(false);
@@ -267,14 +270,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ brixCoins, gameState, onUpdateG
     const updatedQuests = gameState.quests.map(q => q.id === quest.id ? { ...q, isCompleted: true } : q);
 
     const oldRevealedSet = new Set(gameState.revealedCells.map(c => `${c.x},${c.y}`));
-    const newlyRevealedCoords = quest.reward.mapPieces.filter(p => !oldRevealedSet.has(`${p.x},${p.y}`));
+    
+    // Filter reward pieces to stay within the playable quadrant
+    const newlyRevealedCoords = quest.reward.mapPieces
+        .filter(p => !oldRevealedSet.has(`${p.x},${p.y}`))
+        .filter(p => p.x >= 0 && p.x < 10 && p.y >= 10 && p.y < 20);
 
     const newLandmarkQuests: Quest[] = [];
     newlyRevealedCoords.forEach(coord => {
         const mapIndex = coord.y * MAP_WIDTH + coord.x;
         const landmarkChar = mapLayout[mapIndex];
         const landmarkQuest = getQuestForLandmark(landmarkChar);
-        if (landmarkQuest && !updatedQuests.some(q => q.id === landmarkQuest.id)) {
+        if (landmarkQuest && landmarkQuest.id.startsWith("landmark_") && !updatedQuests.some(q => q.id === landmarkQuest.id)) {
             newLandmarkQuests.push(landmarkQuest);
         }
     });
@@ -415,15 +422,16 @@ const GameScreen: React.FC<GameScreenProps> = ({ brixCoins, gameState, onUpdateG
       
       <Modal isOpen={isWorldMapOpen} onClose={() => setIsWorldMapOpen(false)} title="Treasure Map">
         <div className="bg-amber-100 p-1 rounded-lg shadow-inner border-2 border-amber-800/50">
-             <div className="grid grid-cols-14 gap-0">
+             <div className="grid gap-0" style={{gridTemplateColumns: `repeat(${MAP_WIDTH}, minmax(0, 1fr))`}}>
               {mapLayout.map((terrain, i) => {
                 const x = i % MAP_WIDTH;
                 const y = Math.floor(i / MAP_WIDTH);
                 const isRevealed = gameState.revealedCells.some(cell => cell.x === x && cell.y === y);
+                const isOcean = terrain === 'W' || terrain === 'D';
                 return (
                   <div key={i} className={`w-full aspect-square transition-opacity duration-500 relative`}>
                     {getTerrainTile(terrain)}
-                    {!isRevealed && <FogTile />}
+                    {!isRevealed && !isOcean && <FogTile />}
                   </div>
                 );
               })}
@@ -465,18 +473,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ brixCoins, gameState, onUpdateG
           </div>
       )}
 
-      {/* --- GAME MAP VIEWPORT --- */}
+      {/* --- GAME MAP QUADRANT --- */}
       <div className="flex-grow flex items-center justify-center relative">
-        <div className="grid grid-cols-7 gap-0 bg-amber-200 rounded-lg shadow-inner aspect-square max-w-full max-h-full border-4 border-amber-800/80 overflow-hidden">
-          {Array.from({ length: VIEWPORT_SIZE * VIEWPORT_SIZE }).map((_, i) => {
-            const viewX = i % VIEWPORT_SIZE;
-            const viewY = Math.floor(i / VIEWPORT_SIZE);
-            const mapX = viewportCenter.x - Math.floor(VIEWPORT_SIZE / 2) + viewX;
-            const mapY = viewportCenter.y - Math.floor(VIEWPORT_SIZE / 2) + viewY;
-            
-            if (mapX < 0 || mapX >= MAP_WIDTH || mapY < 0 || mapY >= MAP_HEIGHT) {
-                return <div key={i}><SeaTile /></div>;
-            }
+        <div className="grid grid-cols-10 gap-0 bg-amber-200 rounded-lg shadow-inner aspect-square max-w-full max-h-full border-4 border-amber-800/80 overflow-hidden">
+          {Array.from({ length: 10 * 10 }).map((_, i) => {
+            const viewX = i % 10;
+            const viewY = Math.floor(i / 10);
+            const mapX = viewX; // Bottom-left quadrant: x from 0-9
+            const mapY = viewY + 10; // Bottom-left quadrant: y from 10-19
             
             const mapIndex = mapY * MAP_WIDTH + mapX;
             const terrain = mapLayout[mapIndex];
@@ -484,13 +488,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ brixCoins, gameState, onUpdateG
             const placed = gameState.placedBrix.find(b => b.x === mapX && b.y === mapY);
             const brixData = placed ? brixCatalog.find(b => b.id === placed.brixId) : null;
             const isLand = 'LFMSEXHBDIPGN'.includes(terrain);
+            const isOcean = terrain === 'W' || terrain === 'D';
             
             return (
               <div key={i} onClick={() => isRevealed && isLand && handleCellClick(mapX, mapY)} 
                    className={`w-full h-full relative ${isRevealed && isLand && placingBrixId ? 'cursor-pointer hover:ring-2 ring-white z-10' : ''}`}>
                  {getTerrainTile(terrain)}
                  {brixData && <div className="absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">{brixData.asset}</div>}
-                 {!isRevealed && <FogTile />}
+                 {!isRevealed && !isOcean && <FogTile />}
               </div>
             );
           })}

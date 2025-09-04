@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 // A collection of SVG components for rendering the game map tiles.
@@ -72,6 +73,25 @@ export const StartMarkerTile = () => (
   <div className="w-full h-full bg-yellow-200 flex items-center justify-center text-3xl">
     🚩
   </div>
+);
+
+export const LighthouseTile = () => (
+  <svg width="100%" height="100%" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+    <rect width="10" height="10" fill="#81C784" /> {/* Grass background */}
+    <polygon points="4,9 6,9 6.5,2 3.5,2" fill="#E53935"/>
+    <rect x="3.5" y="3" width="3" height="1.5" fill="white"/>
+    <rect x="3.5" y="6" width="3" height="1.5" fill="white"/>
+    <rect x="3" y="1" width="4" height="1" fill="#424242"/>
+    <circle cx="5" cy="1" r="0.5" fill="#FFEB3B"/>
+  </svg>
+);
+
+export const ShipwreckTile = () => (
+  <svg width="100%" height="100%" viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg">
+    <rect width="10" height="10" fill="#4FC3F7" /> {/* Sea background */}
+    <path d="M 2 8 C 3 6, 5 6, 6 8 L 8 7 L 7 5 L 4 5 L 3 7 Z" fill="#A1887F" transform="rotate(-15 5 5)" />
+    <path d="M 5 5 L 5 2 L 6 3 Z" fill="#795548" transform="rotate(-15 5 5)" />
+  </svg>
 );
 
 export const FogTile = () => (
