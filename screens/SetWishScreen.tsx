@@ -1,20 +1,23 @@
 
+
 import React, { useState } from 'react';
+import { NotificationType } from '../types';
 
 interface SetVaultWishScreenProps {
   pendingGoalName: string;
   onSaveWish: (message: string) => void;
   onCancel: () => void;
+  addNotification: (message: string, type: NotificationType) => void;
 }
 
-const SetVaultWishScreen: React.FC<SetVaultWishScreenProps> = ({ pendingGoalName, onSaveWish, onCancel }) => {
+const SetVaultWishScreen: React.FC<SetVaultWishScreenProps> = ({ pendingGoalName, onSaveWish, onCancel, addNotification }) => {
   const [message, setMessage] = useState('');
 
   const handleSave = () => {
     if (message.trim()) {
       onSaveWish(message);
     } else {
-        alert("Please write a message to your future self!");
+        addNotification("Please write a message to your future self!", 'warning');
     }
   };
 

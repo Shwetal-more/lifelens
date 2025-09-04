@@ -1,13 +1,12 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix } from './types';
+import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
 import SignUpLoginScreen from './screens/SignUpLoginScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import HomeScreen from './screens/HomeScreen';
 import AddExpenseScreen from './screens/AddExpenseScreen';
-import MoodTrackerScreen from './screens/MoodTrackerScreen';
+import InnerCompassScreen from './screens/InnerCompassScreen';
 import NotesScreen from './screens/NotesScreen';
-import InsightsScreen from './screens/InsightsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import FinancialGoalsScreen from './screens/FinancialGoalsScreen';
 import AddFinancialGoalScreen from './screens/AddFinancialGoalScreen';
@@ -52,6 +51,21 @@ const initialAchievements: Badge[] = [
 
 const COIN_CONVERSION_RATE = 2; // 1 currency unit = 2 Doubloons
 
+const NotificationToast: React.FC<{ notification: Notification; onDismiss: () => void }> = ({ notification, onDismiss }) => {
+    const typeStyles = {
+        success: 'bg-green-100 border-green-400 text-green-700',
+        error: 'bg-red-100 border-red-400 text-red-700',
+        warning: 'bg-yellow-100 border-yellow-400 text-yellow-700',
+        info: 'bg-blue-100 border-blue-400 text-blue-700',
+    };
+
+    return (
+        <div className={`p-4 border-l-4 rounded-r-lg shadow-lg animate-slide-in-out ${typeStyles[notification.type]}`}>
+            <p className="font-semibold">{notification.message}</p>
+        </div>
+    );
+};
+
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.Welcome);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -75,12 +89,13 @@ const App: React.FC = () => {
      { id: 'g1', name: 'Summer Vacation', targetAmount: 2000, savedAmount: 350, icon: '🌴', targetDate: '2024-08-31', isNorthStar: true }
   ]);
   
-  const [gameState, setGameState] = useState<GameState>({ spentBrixCoins: 0, inventory: [], placedBrix: [], revealedCells: [
+  const [gameState, setGameState] = useState<GameState>({ spentBrixCoins: -1000, inventory: [], placedBrix: [], revealedCells: [
     {x:12, y:6}, {x:11, y:7}, {x:12, y:7}, {x:13, y:7}, {x:12, y:8} // Start area revealed
   ], quests: [] });
 
   // Editing state
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // Gamification State
   const [streak, setStreak] = useState(1);
@@ -106,6 +121,14 @@ const App: React.FC = () => {
     savingsTarget: { amount: 500, period: 'monthly' }
   });
   
+  const addNotification = useCallback((message: string, type: NotificationType = 'info') => {
+      const id = Date.now();
+      setNotifications(prev => [...prev, { id, message, type }]);
+      setTimeout(() => {
+          setNotifications(prev => prev.filter(n => n.id !== id));
+      }, 4000);
+  }, []);
+
   useEffect(() => {
     const savedProfileData = localStorage.getItem('userProfile');
     if (savedProfileData) {
@@ -145,7 +168,6 @@ const App: React.FC = () => {
     const savedGameState = localStorage.getItem('gameState');
     if (savedGameState) {
         const loadedState = JSON.parse(savedGameState);
-        // Ensure revealedCells exists for backward compatibility
         if (!loadedState.revealedCells) {
             loadedState.revealedCells = [{x:12, y:6}, {x:11, y:7}, {x:12, y:7}, {x:13, y:7}, {x:12, y:8}];
         }
@@ -275,12 +297,12 @@ const App: React.FC = () => {
             const now = new Date();
             const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
             if (currentTime === settings.notifications.time) {
-                alert("LifeLens Reminder: Time to log your mood and expenses!");
+                addNotification("LifeLens Reminder: Time to log your mood and expenses!", 'info');
             }
         }, 60000); 
         return () => clearInterval(checkTime);
     }
-  }, [settings.notifications]);
+  }, [settings.notifications, addNotification]);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
       const updated = { ...settings, ...newSettings };
@@ -319,6 +341,19 @@ const App: React.FC = () => {
   const handleSaveProfile = (profile: UserProfile) => {
     setUserProfile(profile);
     localStorage.setItem('userProfile', JSON.stringify(profile));
+
+    const savedGameState = localStorage.getItem('gameState');
+    if (!savedGameState) {
+        const initialGameState: GameState = {
+            spentBrixCoins: -1000,
+            inventory: [],
+            placedBrix: [],
+            revealedCells: [{x:12, y:6}, {x:11, y:7}, {x:12, y:7}, {x:13, y:7}, {x:12, y:8}],
+            quests: [],
+        };
+        setGameState(initialGameState);
+        localStorage.setItem('gameState', JSON.stringify(initialGameState));
+    }
     
     const chatSession = startChatSession(profile, 'general');
     setChat(chatSession);
@@ -376,7 +411,6 @@ const App: React.FC = () => {
   const addMood = useCallback((moodData: { mood: MoodType, reason?: string }) => {
     setMoods(prev => [...prev, { id: Date.now().toString(), ...moodData, date: new Date() }]);
     handleLogActivity();
-    setCurrentScreen(Screen.Home);
   }, [handleLogActivity]);
 
   const addNote = useCallback((content: string) => {
@@ -457,12 +491,13 @@ const App: React.FC = () => {
                   inventory: newInventory,
               };
           });
+          addNotification(`'${brix.name}' added to yer cargo!`, 'success');
           return true;
       } else {
-          alert("Not enough Doubloons!");
+          addNotification("Not enough Doubloons!", 'error');
           return false;
       }
-  }, [brixCoins]);
+  }, [brixCoins, addNotification]);
 
   const handlePlaceBrix = useCallback((brixId: string, x: number, y: number) => {
       setGameState(prev => {
@@ -513,25 +548,23 @@ const App: React.FC = () => {
       case Screen.Home:
         return <HomeScreen userProfile={userProfile} expenses={expenses} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
       case Screen.AddExpense:
-        return <AddExpenseScreen userProfile={userProfile} onSave={saveExpense} onCancel={() => { setEditingExpenseId(null); setCurrentScreen(Screen.Home); }} onDelete={deleteExpense} expenseToEdit={expenseToEdit} goals={goals}/>;
-      case Screen.MoodTracker:
-        return <MoodTrackerScreen moods={moods} onSave={addMood} onCancel={() => setCurrentScreen(Screen.Home)} />;
+        return <AddExpenseScreen userProfile={userProfile} onSave={saveExpense} onCancel={() => { setEditingExpenseId(null); setCurrentScreen(Screen.Home); }} onDelete={deleteExpense} expenseToEdit={expenseToEdit} goals={goals} addNotification={addNotification} />;
+      case Screen.InnerCompass:
+        return <InnerCompassScreen expenses={expenses} moods={moods} userProfile={userProfile} onSaveMood={addMood} />;
       case Screen.Notes:
         return <NotesScreen onSave={addNote} onCancel={() => setCurrentScreen(Screen.Home)} />;
-      case Screen.Insights:
-        return <InsightsScreen userProfile={userProfile} expenses={expenses} moods={moods} />;
       case Screen.Profile:
         return <ProfileScreen userProfile={userProfile} settings={settings} onSettingsChange={updateSettings} onNavigate={(screen) => setCurrentScreen(screen)} />;
       case Screen.FinancialGoals:
         return <FinancialGoalsScreen goals={goals} onNavigate={setCurrentScreen} />;
       case Screen.AddFinancialGoal:
-        return <AddFinancialGoalScreen onSave={addFinancialGoal} onCancel={() => setCurrentScreen(Screen.FinancialGoals)} userProfile={userProfile} />;
+        return <AddFinancialGoalScreen onSave={addFinancialGoal} onCancel={() => setCurrentScreen(Screen.FinancialGoals)} userProfile={userProfile} addNotification={addNotification}/>;
       case Screen.Achievements:
         return <AchievementsScreen badges={achievements} onBack={() => setCurrentScreen(Screen.Profile)} />;
       case Screen.AevumVault:
         return <AevumVaultScreen onSave={addNote} onCancel={() => setCurrentScreen(Screen.Home)} />;
       case Screen.SetVaultWish:
-        return <SetVaultWishScreen pendingGoalName={pendingGoalForWish?.name || 'your goal'} onSaveWish={sealVault} onCancel={cancelVault} />;
+        return <SetVaultWishScreen pendingGoalName={pendingGoalForWish?.name || 'your goal'} onSaveWish={sealVault} onCancel={cancelVault} addNotification={addNotification} />;
       case Screen.VaultRevealed:
         if (revealedGoal && aevumVault) {
             return <VaultRevealedScreen goal={revealedGoal} message={aevumVault.message} onDone={handleCloseVault} />;
@@ -550,6 +583,27 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background font-sans text-primary">
+       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm px-4 space-y-2">
+            {notifications.map(notification => (
+                <NotificationToast
+                    key={notification.id}
+                    notification={notification}
+                    onDismiss={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                />
+            ))}
+        </div>
+        <style>{`
+            @keyframes slideInOut {
+                0% { transform: translateY(-100%); opacity: 0; }
+                15% { transform: translateY(0); opacity: 1; }
+                85% { transform: translateY(0); opacity: 1; }
+                100% { transform: translateY(-100%); opacity: 0; }
+            }
+            .animate-slide-in-out {
+                animation: slideInOut 4s ease-in-out forwards;
+            }
+        `}</style>
+
       <div className="container mx-auto max-w-lg h-screen flex flex-col">
         <main className="flex-grow overflow-y-auto pb-24">
           {renderScreen()}

@@ -1,4 +1,5 @@
 
+
 // FIX: Removed self-import of Screen which caused a conflict.
 export enum Screen {
   Welcome = 'WELCOME',
@@ -6,9 +7,8 @@ export enum Screen {
   Onboarding = 'ONBOARDING',
   Home = 'HOME',
   AddExpense = 'ADD_EXPENSE',
-  MoodTracker = 'MOOD_TRACKER',
+  InnerCompass = 'INNER_COMPASS',
   Notes = 'NOTES',
-  Insights = 'INSIGHTS',
   Profile = 'PROFILE',
   FinancialGoals = 'FINANCIAL_GOALS',
   AddFinancialGoal = 'ADD_FINANCIAL_GOAL',
@@ -162,4 +162,12 @@ export interface GameState {
   revealedCells: {x: number, y: number}[];
   quests: Quest[];
   questCooldownUntil?: number;
+}
+
+export type NotificationType = 'success' | 'error' | 'warning' | 'info';
+
+export interface Notification {
+  id: number;
+  message: string;
+  type: NotificationType;
 }

@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { GameState, BrixComponent, Quest, DecisionChoice } from '../types';
 import { getPirateRiddle, getFinancialQuest, getGameIntroStory } from '../services/geminiService';
@@ -322,7 +324,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ brixCoins, gameState, onUpdateG
       <Modal isOpen={isShopOpen} onClose={() => setIsShopOpen(false)} title="Brix & Pieces Shop">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1">
           {brixCatalog.map(brix => (
-            <div key={brix.id} onClick={() => onPurchaseBrix(brix) && alert(`'${brix.name}' added to yer cargo!`)} className="bg-amber-100 p-3 rounded-xl text-center cursor-pointer hover:ring-2 ring-amber-500">
+            <div key={brix.id} onClick={() => onPurchaseBrix(brix)} className="bg-amber-100 p-3 rounded-xl text-center cursor-pointer hover:ring-2 ring-amber-500">
               <p className="text-4xl">{brix.asset}</p>
               <p className="font-semibold text-sm mt-1">{brix.name}</p>
               <p className="text-xs text-amber-800 flex items-center justify-center gap-1">{brix.cost.toLocaleString()} <DoubloonIcon /></p>

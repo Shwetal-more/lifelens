@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { FinancialGoal, UserProfile } from '../types';
+import { FinancialGoal, UserProfile, NotificationType } from '../types';
 
 interface AddFinancialGoalScreenProps {
   onSave: (goal: Omit<FinancialGoal, 'id'>) => void;
   onCancel: () => void;
   userProfile: UserProfile | null;
+  addNotification: (message: string, type: NotificationType) => void;
 }
 
 const currencySymbols: { [key: string]: string } = {
@@ -19,7 +20,7 @@ const goalPresets = [
     { name: 'Gift Fund', icon: '🎁' },
 ];
 
-const AddFinancialGoalScreen: React.FC<AddFinancialGoalScreenProps> = ({ onSave, onCancel, userProfile }) => {
+const AddFinancialGoalScreen: React.FC<AddFinancialGoalScreenProps> = ({ onSave, onCancel, userProfile, addNotification }) => {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('🎯');
   const [targetAmount, setTargetAmount] = useState('');
@@ -36,7 +37,7 @@ const AddFinancialGoalScreen: React.FC<AddFinancialGoalScreenProps> = ({ onSave,
 
   const handleSave = () => {
     if (!name || !targetAmount || !targetDate) {
-        alert("Please fill out all fields.");
+        addNotification("Please fill out all fields.", 'warning');
         return;
     }
     onSave({

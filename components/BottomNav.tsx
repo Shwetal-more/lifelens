@@ -12,9 +12,11 @@ const HomeIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const MoodIcon = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9 9.75h.008v.008H9V9.75Zm6 0h.008v.008H15V9.75Z" />
+const CompassIcon = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 8.09 9.91 9.91l-1.82-6 6 1.82 1.82 6Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
   </svg>
 );
 
@@ -65,7 +67,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeScreen, onNavigate }) => {
         <NavItem screen={Screen.Home} activeScreen={activeScreen} onNavigate={onNavigate} Icon={HomeIcon} label="Home" />
         <NavItem screen={Screen.FinancialGoals} activeScreen={activeScreen} onNavigate={onNavigate} Icon={GoalsIcon} label="Goals" />
         <NavItem screen={Screen.Game} activeScreen={activeScreen} onNavigate={onNavigate} Icon={IslandIcon} label="Island" />
-        <NavItem screen={Screen.MoodTracker} activeScreen={activeScreen} onNavigate={onNavigate} Icon={MoodIcon} label="Mood" />
+        <NavItem screen={Screen.InnerCompass} activeScreen={activeScreen} onNavigate={onNavigate} Icon={CompassIcon} label="Compass" />
         <NavItem screen={Screen.Profile} activeScreen={activeScreen} onNavigate={onNavigate} Icon={ProfileIcon} label="Profile" />
       </div>
     </nav>

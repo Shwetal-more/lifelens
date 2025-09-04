@@ -1,8 +1,8 @@
 
+
 import React, { useState, useEffect } from 'react';
-import { Expense, MoodType, UserProfile, FinancialGoal } from '../types';
+import { Expense, MoodType, UserProfile, FinancialGoal, NotificationType } from '../types';
 import { getExpenseAdvice, getMindfulSpendingPrompt, getPostPurchaseReassurance } from '../services/geminiService';
-import { sendNotification } from '../services/notificationService';
 
 interface AddExpenseScreenProps {
   userProfile: UserProfile | null;
@@ -11,6 +11,7 @@ interface AddExpenseScreenProps {
   onDelete: (id: string) => void;
   expenseToEdit?: Expense | null;
   goals: FinancialGoal[];
+  addNotification: (message: string, type: NotificationType) => void;
 }
 
 const currencySymbols: { [key: string]: string } = {
@@ -22,7 +23,7 @@ const currencySymbols: { [key: string]: string } = {
 };
 
 
-const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, goals }) => {
+const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, goals, addNotification }) => {
   const isEditMode = !!expenseToEdit;
   const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
 
@@ -90,7 +91,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
   const handleConfirmMindfulExpense = async () => {
     if (pendingExpense) {
       const reassurance = await getPostPurchaseReassurance(pendingExpense, goals.length > 0 ? goals[0] : null);
-      sendNotification("LifeLens Coach", reassurance);
+      addNotification(reassurance, 'info');
       
       onSave(pendingExpense);
       setMindfulPrompt(null);

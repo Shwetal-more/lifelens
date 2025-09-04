@@ -195,7 +195,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, onNaviga
                 <PlusIcon className="w-8 h-8 text-primary"/>
                 <span className="font-semibold text-sm mt-2">Expense</span>
             </button>
-            <button onClick={() => onNavigate(Screen.MoodTracker)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
+            <button onClick={() => onNavigate(Screen.InnerCompass)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
                 <PlusIcon className="w-8 h-8 text-accent"/>
                 <span className="font-semibold text-sm mt-2">Mood</span>
             </button>
@@ -226,7 +226,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, onNaviga
               ))}
             </div>
           </div>
-          <div className="bg-card p-5 rounded-2xl shadow-card cursor-pointer hover:shadow-lg transform hover:-translate-y-1 transition-all" onClick={() => onNavigate(Screen.Insights)}>
+          <div className="bg-card p-5 rounded-2xl shadow-card cursor-pointer hover:shadow-lg transform hover:-translate-y-1 transition-all" onClick={() => onNavigate(Screen.InnerCompass)}>
             <h3 className="font-bold text-lg text-primary">Unlock Your Insights</h3>
             <p className="text-secondary text-sm">Discover your secret patterns.</p>
           </div>
