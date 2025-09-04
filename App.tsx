@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -348,7 +349,10 @@ const App: React.FC = () => {
             spentBrixCoins: -1000,
             inventory: [],
             placedBrix: [],
-            revealedCells: [{x:12, y:6}, {x:11, y:7}, {x:12, y:7}, {x:13, y:7}, {x:12, y:8}],
+            revealedCells: [
+                {x:12, y:6}, {x:11, y:7}, {x:12, y:7}, {x:13, y:7}, 
+                {x:12, y:8}, {x:11, y:6}, {x:13, y:6}, {x:12, y:5}
+            ],
             quests: [],
         };
         setGameState(initialGameState);
