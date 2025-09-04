@@ -3,13 +3,13 @@
 // FIX: Removed self-import of Screen which caused a conflict.
 export enum Screen {
   Welcome = 'WELCOME',
-  SignUpLogin = 'SIGNUP_LOGIN',
   Onboarding = 'ONBOARDING',
   Home = 'HOME',
   AddExpense = 'ADD_EXPENSE',
   InnerCompass = 'INNER_COMPASS',
   Notes = 'NOTES',
   Profile = 'PROFILE',
+  EditProfile = 'EDIT_PROFILE',
   FinancialGoals = 'FINANCIAL_GOALS',
   AddFinancialGoal = 'ADD_FINANCIAL_GOAL',
   Achievements = 'ACHIEVEMENTS',
