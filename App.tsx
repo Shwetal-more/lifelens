@@ -1,15 +1,14 @@
 
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
+import SignUpLoginScreen from './screens/SignUpLoginScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import HomeScreen from './screens/HomeScreen';
 import AddExpenseScreen from './screens/AddExpenseScreen';
 import InnerCompassScreen from './screens/InnerCompassScreen';
 import NotesScreen from './screens/NotesScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import EditProfileScreen from './screens/EditProfileScreen';
 import FinancialGoalsScreen from './screens/FinancialGoalsScreen';
 import AddFinancialGoalScreen from './screens/AddFinancialGoalScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
@@ -136,7 +135,6 @@ const App: React.FC = () => {
     if (savedProfileData) {
         const profile = JSON.parse(savedProfileData);
         setUserProfile(profile);
-        setCurrentScreen(Screen.Home); // User exists, go straight to home
         if (profile.age) {
             const chatSession = startChatSession(profile, chatContext);
             setChat(chatSession);
@@ -333,6 +331,14 @@ const App: React.FC = () => {
     }
   }, [lastLogDate, streak]);
   
+  const handleAuthSuccess = () => {
+    if (userProfile && userProfile.age > 0) {
+      setCurrentScreen(Screen.Home);
+    } else {
+      setCurrentScreen(Screen.Onboarding);
+    }
+  };
+
   const handleSaveProfile = (profile: UserProfile) => {
     setUserProfile(profile);
     localStorage.setItem('userProfile', JSON.stringify(profile));
@@ -361,12 +367,6 @@ const App: React.FC = () => {
     }]);
 
     setCurrentScreen(Screen.Home);
-  };
-
-  const handleUpdateProfile = (profile: UserProfile) => {
-    setUserProfile(profile);
-    localStorage.setItem('userProfile', JSON.stringify(profile));
-    setCurrentScreen(Screen.Profile);
   };
   
   const handleSendMessage = async (message: string) => {
@@ -543,7 +543,9 @@ const App: React.FC = () => {
   const renderScreen = () => {
     switch (currentScreen) {
       case Screen.Welcome:
-        return <WelcomeScreen onNavigate={() => setCurrentScreen(Screen.Onboarding)} />;
+        return <WelcomeScreen onNavigate={() => setCurrentScreen(Screen.SignUpLogin)} />;
+      case Screen.SignUpLogin:
+        return <SignUpLoginScreen onAuthSuccess={handleAuthSuccess} />;
       case Screen.Onboarding:
         return <OnboardingScreen onSaveProfile={handleSaveProfile} />;
       case Screen.Home:
@@ -556,8 +558,6 @@ const App: React.FC = () => {
         return <NotesScreen onSave={addNote} onCancel={() => setCurrentScreen(Screen.Home)} />;
       case Screen.Profile:
         return <ProfileScreen userProfile={userProfile} settings={settings} onSettingsChange={updateSettings} onNavigate={(screen) => setCurrentScreen(screen)} />;
-      case Screen.EditProfile:
-        return <EditProfileScreen userProfile={userProfile!} onSave={handleUpdateProfile} onCancel={() => setCurrentScreen(Screen.Profile)} />;
       case Screen.FinancialGoals:
         return <FinancialGoalsScreen goals={goals} onNavigate={setCurrentScreen} />;
       case Screen.AddFinancialGoal:
@@ -578,11 +578,11 @@ const App: React.FC = () => {
       case Screen.Chat:
         return <ChatScreen history={chatHistory} onSendMessage={handleSendMessage} onCancel={() => setCurrentScreen(Screen.Home)} userName={userProfile?.name || 'Explorer'} isLoading={isAssistantLoading} />;
       default:
-        return <WelcomeScreen onNavigate={() => setCurrentScreen(Screen.Onboarding)} />;
+        return <HomeScreen userProfile={userProfile} expenses={expenses} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
     }
   };
   
-  const showBottomNav = ![Screen.Welcome, Screen.Onboarding, Screen.SetVaultWish, Screen.VaultRevealed, Screen.Chat, Screen.EditProfile].includes(currentScreen);
+  const showBottomNav = ![Screen.Welcome, Screen.SignUpLogin, Screen.Onboarding, Screen.SetVaultWish, Screen.VaultRevealed, Screen.Chat].includes(currentScreen);
 
   return (
     <div className="min-h-screen bg-background font-sans text-primary">
