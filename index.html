@@ -11,11 +11,11 @@
         theme: {
           extend: {
             colors: {
-              'background': '#F0F7F9', // Light Blueish-Grey
-              'card': '#FFFFFF',         // White
-              'primary': '#2C3E50',       // Very Dark Blue (for text and important elements)
-              'secondary': '#8A9BA8',   // Muted Grey (for subtext)
-              'accent': '#1DE9B6',       // Vibrant Teal/Green
+              'background': '#F0F7F9',
+              'card': '#FFFFFF',
+              'primary': '#2C3E50',
+              'secondary': '#8A9BA8',
+              'accent': '#1DE9B6',
               'accent-dark': '#00BFA5',
               'light-shadow': 'rgba(0, 0, 0, 0.05)',
               'white-soft': '#F8F9FA',
@@ -29,19 +29,21 @@
         },
       }
     </script>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.16.0",
-    "recharts": "https://aistudiocdn.com/recharts@^3.1.2"
-  }
-}
-</script>
-</head>
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+        "react/": "https://aistudiocdn.com/react@^19.1.1/",
+        "react": "https://aistudiocdn.com/react@^19.1.1",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.16.0",
+        "recharts": "https://aistudiocdn.com/recharts@^3.1.2"
+      }
+    }
+    </script>
+  </head>
   <body class="bg-background">
     <div id="root"></div>
+    <!-- 👇 Add this line so React starts -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
