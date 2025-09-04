@@ -26,11 +26,13 @@ const GoalsIcon = ({ className }: { className?: string }) => (
 );
 
 
-const InsightsIcon = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
-  </svg>
+const IslandIcon = ({ className }: { className?: string }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.125 6.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm0 0v.004M8.25 9.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM8.25 9.75v.004M15.75 9.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM15.75 9.75v.004m-7.5 3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3-3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m-3-3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m-3 3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m12 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004M5.25 16.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m.75-12a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004M3.75 12a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m16.5 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004M12 19.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
 );
+
 
 const ProfileIcon = ({ className }: { className?: string }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -61,9 +63,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeScreen, onNavigate }) => {
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg bg-card/80 backdrop-blur-sm rounded-2xl shadow-card">
       <div className="flex justify-around items-center h-20">
         <NavItem screen={Screen.Home} activeScreen={activeScreen} onNavigate={onNavigate} Icon={HomeIcon} label="Home" />
-        <NavItem screen={Screen.MoodTracker} activeScreen={activeScreen} onNavigate={onNavigate} Icon={MoodIcon} label="Mood" />
         <NavItem screen={Screen.FinancialGoals} activeScreen={activeScreen} onNavigate={onNavigate} Icon={GoalsIcon} label="Goals" />
-        <NavItem screen={Screen.Insights} activeScreen={activeScreen} onNavigate={onNavigate} Icon={InsightsIcon} label="Insights" />
+        <NavItem screen={Screen.Game} activeScreen={activeScreen} onNavigate={onNavigate} Icon={IslandIcon} label="Island" />
+        <NavItem screen={Screen.MoodTracker} activeScreen={activeScreen} onNavigate={onNavigate} Icon={MoodIcon} label="Mood" />
         <NavItem screen={Screen.Profile} activeScreen={activeScreen} onNavigate={onNavigate} Icon={ProfileIcon} label="Profile" />
       </div>
     </nav>

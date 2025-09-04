@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { Expense, MoodType, UserProfile } from '../types';
-import { getExpenseAdvice } from '../services/geminiService';
+import { Expense, MoodType, UserProfile, FinancialGoal } from '../types';
+import { getExpenseAdvice, getMindfulSpendingPrompt, getPostPurchaseReassurance } from '../services/geminiService';
+import { sendNotification } from '../services/notificationService';
 
 interface AddExpenseScreenProps {
   userProfile: UserProfile | null;
@@ -8,6 +10,7 @@ interface AddExpenseScreenProps {
   onCancel: () => void;
   onDelete: (id: string) => void;
   expenseToEdit?: Expense | null;
+  goals: FinancialGoal[];
 }
 
 const currencySymbols: { [key: string]: string } = {
@@ -19,7 +22,7 @@ const currencySymbols: { [key: string]: string } = {
 };
 
 
-const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit }) => {
+const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, goals }) => {
   const isEditMode = !!expenseToEdit;
   const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
 
@@ -30,6 +33,8 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
   const [isUseful, setIsUseful] = useState(true);
   const [aiAdvice, setAiAdvice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [mindfulPrompt, setMindfulPrompt] = useState<string | null>(null);
+  const [pendingExpense, setPendingExpense] = useState<Omit<Expense, 'id' | 'date'> | null>(null);
 
   useEffect(() => {
     if (isEditMode && expenseToEdit) {
@@ -57,6 +62,15 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
         return;
     }
 
+    if (!isUseful) {
+      setIsLoading(true);
+      const prompt = await getMindfulSpendingPrompt(expenseData, goals);
+      setMindfulPrompt(prompt);
+      setPendingExpense(expenseData);
+      setIsLoading(false);
+      return; 
+    }
+
     setIsLoading(true);
     const advice = await getExpenseAdvice(expenseData);
     setAiAdvice(advice);
@@ -72,11 +86,44 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
         onDelete(expenseToEdit.id);
     }
   }
+
+  const handleConfirmMindfulExpense = async () => {
+    if (pendingExpense) {
+      const reassurance = await getPostPurchaseReassurance(pendingExpense, goals.length > 0 ? goals[0] : null);
+      sendNotification("LifeLens Coach", reassurance);
+      
+      onSave(pendingExpense);
+      setMindfulPrompt(null);
+      setPendingExpense(null);
+    }
+  };
+
+  const handleCancelMindfulExpense = () => {
+    setMindfulPrompt(null);
+    setPendingExpense(null);
+  };
   
   const inputStyles = "w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none transition-shadow";
 
   return (
     <div className="p-4 pt-8">
+      {mindfulPrompt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-2xl p-6 shadow-xl text-center max-w-sm animate-fade-in">
+            <h2 className="text-lg font-bold text-primary mb-2">A quick reflection...</h2>
+            <p className="text-secondary text-lg italic mb-6">"{mindfulPrompt}"</p>
+            <div className="flex justify-center space-x-4">
+              <button onClick={handleCancelMindfulExpense} className="font-bold py-3 px-6 rounded-xl hover:bg-gray-100 text-secondary">
+                Maybe not
+              </button>
+              <button onClick={handleConfirmMindfulExpense} className="bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-primary/90">
+                Log it anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h1 className="text-3xl font-bold text-primary mb-8 text-center">{isEditMode ? 'Edit Expense' : 'Add New Expense'}</h1>
       
       {aiAdvice ? (
@@ -187,6 +234,13 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
         }
         .toggle-checkbox:checked + .toggle-label {
           background-color: #1DE9B6; /* accent */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
         }
       `}</style>
     </div>

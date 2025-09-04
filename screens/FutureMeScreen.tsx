@@ -1,12 +1,13 @@
+
 import React, { useState } from 'react';
 import { getAffirmation } from '../services/geminiService';
 
-interface FutureMeScreenProps {
+interface AevumVaultScreenProps {
   onSave: (content: string) => void;
   onCancel: () => void;
 }
 
-const FutureMeScreen: React.FC<FutureMeScreenProps> = ({ onSave, onCancel }) => {
+const AevumVaultScreen: React.FC<AevumVaultScreenProps> = ({ onSave, onCancel }) => {
   const [message, setMessage] = useState('');
   const [isLoadingAffirmation, setIsLoadingAffirmation] = useState(false);
 
@@ -25,8 +26,8 @@ const FutureMeScreen: React.FC<FutureMeScreenProps> = ({ onSave, onCancel }) => 
 
   return (
     <div className="p-4 pt-8">
-      <h1 className="text-3xl font-bold text-primary text-center mb-2">Message to Your Future Self</h1>
-      <p className="text-secondary text-center mb-8">What hopes, dreams, or advice do you want to share?</p>
+      <h1 className="text-3xl font-bold text-primary text-center mb-2">Message for the Aevum Vault</h1>
+      <p className="text-secondary text-center mb-8">What hopes, dreams, or advice do you want to seal away?</p>
       
       <textarea
         value={message}
@@ -41,7 +42,7 @@ const FutureMeScreen: React.FC<FutureMeScreenProps> = ({ onSave, onCancel }) => 
           disabled={isLoadingAffirmation}
           className="w-full bg-card text-accent-dark font-bold py-4 px-4 rounded-2xl shadow-card hover:shadow-lg disabled:bg-gray-100 disabled:text-secondary transform hover:-translate-y-0.5 transition-all"
         >
-          {isLoadingAffirmation ? 'Generating...' : '✨ Suggest a Positive Affirmation'}
+          {isLoadingAffirmation ? 'Generating...' : '✨ Suggest a Positive Mantra'}
         </button>
       </div>
 
@@ -53,11 +54,11 @@ const FutureMeScreen: React.FC<FutureMeScreenProps> = ({ onSave, onCancel }) => 
           onClick={handleSave}
           className="bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-primary/90 transform hover:-translate-y-0.5 transition-all"
         >
-          Save for Future
+          Save Note
         </button>
       </div>
     </div>
   );
 };
 
-export default FutureMeScreen;
+export default AevumVaultScreen;
