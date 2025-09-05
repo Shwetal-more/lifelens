@@ -4,6 +4,7 @@ import { FinancialGoal, Screen, UserProfile } from '../types';
 interface FinancialGoalsScreenProps {
   goals: FinancialGoal[];
   onNavigate: (screen: Screen) => void;
+  userProfile: UserProfile | null;
 }
 
 const VaultIcon = ({ className }: { className?: string }) => (
@@ -18,7 +19,16 @@ const PlusIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
-const FinancialGoalsScreen: React.FC<FinancialGoalsScreenProps> = ({ goals, onNavigate }) => {
+const currencySymbols: { [key: string]: string } = {
+  'USD': '$',
+  'EUR': '€',
+  'GBP': '£',
+  'INR': '₹',
+  'JPY': '¥',
+};
+
+const FinancialGoalsScreen: React.FC<FinancialGoalsScreenProps> = ({ goals, onNavigate, userProfile }) => {
+  const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
 
   const calculateProgress = (saved: number, target: number) => {
     if (target <= 0) return 0;
@@ -52,7 +62,7 @@ const FinancialGoalsScreen: React.FC<FinancialGoalsScreenProps> = ({ goals, onNa
                 <span className="text-4xl">{goal.icon}</span>
                 <div>
                   <h2 className="font-bold text-lg text-primary">{goal.name}</h2>
-                  <p className="text-sm text-secondary font-semibold">${goal.savedAmount.toLocaleString()} / <span className="text-accent-dark">${goal.targetAmount.toLocaleString()}</span></p>
+                  <p className="text-sm text-secondary font-semibold">{currencySymbol}{goal.savedAmount.toLocaleString()} / <span className="text-accent-dark">{currencySymbol}{goal.targetAmount.toLocaleString()}</span></p>
                 </div>
               </div>
               <div className="w-full bg-background rounded-full h-4">

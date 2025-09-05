@@ -1,7 +1,5 @@
-
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
-import { requestNotificationPermission } from '../services/notificationService';
 
 interface OnboardingScreenProps {
   onSaveProfile: (profile: UserProfile) => void;
@@ -12,10 +10,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY'>('USD');
-  const [phone, setPhone] = useState('');
-  const [smsEnabled, setSmsEnabled] = useState(true);
   
-  const handleSave = () => {
+  const handleSave = (smsEnabled: boolean) => {
     if (name.trim() === '') {
       alert('Please enter your name.');
       setStep(1);
@@ -26,30 +22,16 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
         setStep(2);
         return;
     }
-    if (smsEnabled && phone.trim() === '') {
-      alert('Please enter a phone number for SMS alerts, or uncheck the box to finish.');
-      setStep(4);
-      return;
-    }
-    onSaveProfile({ name, age: parseInt(age, 10), currency, phone, smsEnabled });
-  };
-  
-  const handleEnableNotifications = async () => {
-    await requestNotificationPermission();
-    handleSave(); // Save after notification step
+    onSaveProfile({ name, age: parseInt(age, 10), currency, smsEnabled });
   };
 
   const handleNextStep = () => {
-    if (step === 4 && smsEnabled && phone.trim() === '') {
-        alert('Please enter a phone number for SMS alerts, or uncheck the box to proceed.');
-        return;
-    }
     setStep(s => Math.min(totalSteps, s + 1))
   };
 
   const inputStyles = "w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none transition-shadow";
 
-  const totalSteps = 5;
+  const totalSteps = 4;
 
   return (
     <div className="p-4 flex flex-col justify-center h-full">
@@ -122,42 +104,19 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
             </select>
           </div>
         )}
-
-        {step === 4 && (
-            <div>
-                <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-secondary mb-1 ml-2">Phone Number</label>
-                    <input
-                        type="tel"
-                        id="phone"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className={inputStyles}
-                        placeholder="To receive SMS spending alerts"
-                    />
-                </div>
-                 <div className="flex items-center space-x-3 pt-4">
-                    <input
-                        type="checkbox"
-                        id="sms"
-                        checked={smsEnabled}
-                        onChange={(e) => setSmsEnabled(e.target.checked)}
-                        className="h-5 w-5 rounded border-gray-300 text-accent focus:ring-accent"
-                    />
-                    <label htmlFor="sms" className="text-sm text-secondary">
-                        Enable SMS spending alerts
-                    </label>
-                </div>
-            </div>
-        )}
         
-        {step === 5 && (
+        {step === 4 && (
             <div className="text-center p-4">
-                 <h2 className="text-2xl font-bold text-primary mb-4">Get Real-Time Insights</h2>
-                 <p className="text-secondary mb-6">Enable notifications to receive AI-powered spending alerts and motivational tips right on your device. It's like having a financial coach in your pocket!</p>
-                 <button onClick={handleEnableNotifications} className="w-full bg-accent text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-accent-dark transform hover:-translate-y-1 transition-all">
-                    Enable & Finish
-                 </button>
+                 <h2 className="text-2xl font-bold text-primary mb-4">Automate Your Insights</h2>
+                 <p className="text-secondary mb-6">Allow LifeLens to read financial SMS messages to automatically generate insights and track your spending. Your data is processed securely and never shared.</p>
+                 <div className="space-y-3">
+                    <button onClick={() => handleSave(true)} className="w-full bg-accent text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-accent-dark transform hover:-translate-y-1 transition-all">
+                        Enable Automatic Insights
+                    </button>
+                    <button onClick={() => handleSave(false)} className="w-full text-sm text-secondary font-semibold py-2">
+                        Maybe Later
+                    </button>
+                 </div>
             </div>
         )}
       </div>
@@ -170,19 +129,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
         >
           Back
         </button>
-        {step < totalSteps ? (
+        {step < totalSteps && (
           <button
             onClick={handleNextStep}
             className="bg-primary text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-primary/90 transform hover:-translate-y-1 transition-all"
           >
              Next
-          </button>
-        ) : (
-          <button
-            onClick={handleSave}
-            className="bg-accent text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-accent-dark transform hover:-translate-y-1 transition-all"
-          >
-            Skip & Get Started
           </button>
         )}
       </div>

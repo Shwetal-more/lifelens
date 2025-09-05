@@ -1,6 +1,4 @@
-
-
-// FIX: Removed self-import of Screen which caused a conflict.
+// FIX: Removed self-import of `Screen` which was causing a conflict with its local declaration.
 export enum Screen {
   Welcome = 'WELCOME',
   SignUpLogin = 'SIGNUP_LOGIN',
@@ -19,6 +17,7 @@ export enum Screen {
   Game = 'GAME',
   Chat = 'CHAT',
   SpendingCheck = 'SPENDING_CHECK',
+  PrivacyPolicy = 'PRIVACY_POLICY',
 }
 
 export enum MoodType {
@@ -48,8 +47,7 @@ export interface UserProfile {
   name: string;
   age: number;
   currency: 'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY';
-  phone?: string;
-  smsEnabled?: boolean;
+  smsEnabled: boolean;
 }
 
 export interface Expense {
@@ -130,6 +128,15 @@ interface RiddleData {
     answer: string;
 }
 
+export interface HangmanData {
+    words: string[];
+    rewardCoins?: number;
+}
+
+export interface RiddleChallengeData {
+    riddles: RiddleData[];
+}
+
 // FIX: Exported DecisionChoice interface so it can be imported in other files.
 export interface DecisionChoice {
     text: string;
@@ -145,15 +152,16 @@ interface DecisionData {
 
 export interface Quest {
     id: string;
-    type: 'riddle' | 'decision';
+    type: 'riddle' | 'decision' | 'hangman' | 'riddle_challenge';
     title: string;
     description: string;
     isCompleted: boolean;
     reward: {
         doubloons: number;
         mapPieces: {x: number, y: number}[];
+        items?: string[];
     };
-    data: Partial<RiddleData & DecisionData>;
+    data: Partial<RiddleData & DecisionData & HangmanData & RiddleChallengeData>;
 }
 
 export interface GameState {
@@ -163,6 +171,16 @@ export interface GameState {
   revealedCells: {x: number, y: number}[];
   quests: Quest[];
   questCooldownUntil?: number;
+  questsCompletedSinceCooldown?: number;
+  specialItems?: string[]; // To store talisman, etc.
+  activeMinigameState?: { // To hold progress for multi-stage quests
+      type: 'hangman' | 'riddle_challenge';
+      progress: number; // e.g., wordIndex or riddleIndex
+      hangman?: {
+          guessedLetters: string[];
+          wrongGuesses: number;
+      }
+  } | null;
 }
 
 export type NotificationType = 'success' | 'error' | 'warning' | 'info';

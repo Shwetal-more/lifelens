@@ -1,7 +1,8 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { Expense, MoodType, UserProfile, FinancialGoal, NotificationType } from '../types';
 import { getExpenseAdvice, getMindfulSpendingPrompt, getPostPurchaseReassurance } from '../services/geminiService';
-import { sendSmsNotification } from '../services/notificationService'; // ✅ SMS service import
 
 interface AddExpenseScreenProps {
   userProfile: UserProfile | null;
@@ -11,6 +12,8 @@ interface AddExpenseScreenProps {
   expenseToEdit?: Expense | null;
   goals: FinancialGoal[];
   addNotification: (message: string, type: NotificationType) => void;
+  pendingData?: { amount: string, category: string } | null;
+  onClearPendingData: () => void;
 }
 
 const currencySymbols: { [key: string]: string } = {
@@ -21,7 +24,8 @@ const currencySymbols: { [key: string]: string } = {
   'JPY': '¥',
 };
 
-const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, goals, addNotification }) => {
+
+const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, goals, addNotification, pendingData, onClearPendingData }) => {
   const isEditMode = !!expenseToEdit;
   const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
 
@@ -44,6 +48,14 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       setIsUseful(expenseToEdit.isUseful);
     }
   }, [isEditMode, expenseToEdit]);
+  
+  useEffect(() => {
+    if(pendingData && !isEditMode) {
+      setAmount(pendingData.amount);
+      setCategory(pendingData.category);
+      onClearPendingData();
+    }
+  }, [pendingData, isEditMode, onClearPendingData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,19 +87,8 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     setAiAdvice(advice);
     setIsLoading(false);
 
-    setTimeout(async () => {
+    setTimeout(() => {
         onSave(expenseData);
-
-        // ✅ Send SMS after saving normal expense
-        if (userProfile?.phone) {
-          try {
-            await sendSmsNotification(userProfile.phone, `Expense: ₹${expenseData.amount} for ${expenseData.category}`);
-            console.log('SMS sent successfully');
-          } catch (err) {
-            console.error('SMS error:', err);
-          }
-        }
-
     }, 3000);
   };
 
@@ -103,17 +104,6 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       addNotification(reassurance, 'info');
       
       onSave(pendingExpense);
-
-      // ✅ Send SMS after saving indulgence/mindful expense
-      if (userProfile?.phone) {
-        try {
-          await sendSmsNotification(userProfile.phone, `Expense: ₹${pendingExpense.amount} for ${pendingExpense.category}`);
-          console.log('SMS sent successfully');
-        } catch (err) {
-          console.error('SMS error:', err);
-        }
-      }
-
       setMindfulPrompt(null);
       setPendingExpense(null);
     }

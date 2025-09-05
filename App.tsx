@@ -1,5 +1,3 @@
-
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -22,6 +20,7 @@ import GameScreen from './screens/GameScreen';
 import ChatScreen from './screens/ChatScreen';
 import { Chat } from '@google/genai';
 import SpendingCheckScreen from './screens/SpendingCheckScreen';
+import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -53,6 +52,18 @@ const initialAchievements: Badge[] = [
 ];
 
 const COIN_CONVERSION_RATE = 2; // 1 currency unit = 2 Doubloons
+
+// Helper function to calculate initially revealed land cells
+const getInitialRevealedCells = () => {
+    // Start with the shipwreck tile and a small starting beach area of two adjacent land tiles.
+    // This gives the player a starting point and a small area to begin building.
+    return [
+        { x: 4, y: 19 }, // Shipwreck 'H'
+        { x: 6, y: 18 }, // Land 'L'
+        { x: 7, y: 18 }, // Land 'L'
+    ];
+};
+
 
 const NotificationToast: React.FC<{ notification: Notification; onDismiss: () => void }> = ({ notification, onDismiss }) => {
     const typeStyles = {
@@ -92,9 +103,7 @@ const App: React.FC = () => {
      { id: 'g1', name: 'Summer Vacation', targetAmount: 2000, savedAmount: 350, icon: '🌴', targetDate: '2024-08-31', isNorthStar: true }
   ]);
   
-  const [gameState, setGameState] = useState<GameState>({ spentBrixCoins: -1000, inventory: [], placedBrix: [], revealedCells: [
-    {x: 4, y: 19}, {x: 3, y: 19}, {x: 5, y: 19}, {x: 4, y: 18} // Start area revealed at Shipwreck
-  ], quests: [] });
+  const [gameState, setGameState] = useState<GameState>({ spentBrixCoins: 0, inventory: [], placedBrix: [], revealedCells: getInitialRevealedCells(), quests: [], questsCompletedSinceCooldown: 0 });
 
   // Editing state
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
@@ -173,7 +182,10 @@ const App: React.FC = () => {
     if (savedGameState) {
         const loadedState = JSON.parse(savedGameState);
         if (!loadedState.revealedCells || loadedState.revealedCells.length === 0) {
-            loadedState.revealedCells = [{x: 4, y: 19}, {x: 3, y: 19}, {x: 5, y: 19}, {x: 4, y: 18}];
+            loadedState.revealedCells = getInitialRevealedCells();
+        }
+        if (loadedState.questsCompletedSinceCooldown === undefined) {
+            loadedState.questsCompletedSinceCooldown = 0;
         }
         setGameState(loadedState);
     }
@@ -208,7 +220,7 @@ const App: React.FC = () => {
       const recentExpenses = expenses.filter(e => new Date(e.date) >= lastWeek);
       const recentMoods = moods.filter(m => new Date(m.date) >= lastWeek);
       
-      const insightText = await getWeeklySmsInsight(recentExpenses, recentMoods, userProfile.name || 'Explorer');
+      const insightText = await getWeeklySmsInsight(recentExpenses, recentMoods, userProfile);
       setWeeklyInsight(insightText);
     };
     fetchWeeklyInsight();
@@ -313,6 +325,15 @@ const App: React.FC = () => {
       setSettings(updated);
       localStorage.setItem('appSettings', JSON.stringify(updated));
   }
+
+  const handleUpdateProfile = (updatedProfileData: Partial<UserProfile>) => {
+    setUserProfile(prev => {
+        if (!prev) return null;
+        const newProfile = { ...prev, ...updatedProfileData };
+        localStorage.setItem('userProfile', JSON.stringify(newProfile));
+        return newProfile;
+    });
+  };
   
   const handleLogActivity = useCallback(() => {
     const today = new Date();
@@ -349,13 +370,12 @@ const App: React.FC = () => {
     const savedGameState = localStorage.getItem('gameState');
     if (!savedGameState) {
         const initialGameState: GameState = {
-            spentBrixCoins: -1000,
+            spentBrixCoins: 0,
             inventory: [],
             placedBrix: [],
-            revealedCells: [
-                {x: 4, y: 19}, {x: 3, y: 19}, {x: 5, y: 19}, {x: 4, y: 18}
-            ],
+            revealedCells: getInitialRevealedCells(),
             quests: [],
+            questsCompletedSinceCooldown: 0,
         };
         setGameState(initialGameState);
         localStorage.setItem('gameState', JSON.stringify(initialGameState));
@@ -487,7 +507,10 @@ const App: React.FC = () => {
   }, [totalSaved, gameState.spentBrixCoins]);
 
   const handlePurchaseBrix = useCallback((brix: BrixComponent) => {
-      if (brixCoins >= brix.cost) {
+      const earned = totalSaved * COIN_CONVERSION_RATE;
+      const currentCoins = Math.floor(earned - gameState.spentBrixCoins);
+
+      if (currentCoins >= brix.cost) {
           setGameState(prev => {
               const newInventory = [...prev.inventory];
               const existingBrix = newInventory.find(item => item.brixId === brix.id);
@@ -508,7 +531,7 @@ const App: React.FC = () => {
           addNotification("Not enough Doubloons!", 'error');
           return false;
       }
-  }, [brixCoins, addNotification]);
+  }, [gameState, totalSaved, addNotification]);
 
   const handlePlaceBrix = useCallback((brixId: string, x: number, y: number) => {
       setGameState(prev => {
@@ -565,9 +588,9 @@ const App: React.FC = () => {
       case Screen.Notes:
         return <NotesScreen onSave={addNote} onCancel={() => setCurrentScreen(Screen.Home)} />;
       case Screen.Profile:
-        return <ProfileScreen userProfile={userProfile} settings={settings} onSettingsChange={updateSettings} onNavigate={(screen) => setCurrentScreen(screen)} />;
+        return <ProfileScreen userProfile={userProfile} settings={settings} onSettingsChange={updateSettings} onProfileChange={handleUpdateProfile} onNavigate={(screen) => setCurrentScreen(screen)} />;
       case Screen.FinancialGoals:
-        return <FinancialGoalsScreen goals={goals} onNavigate={setCurrentScreen} />;
+        return <FinancialGoalsScreen goals={goals} onNavigate={setCurrentScreen} userProfile={userProfile} />;
       case Screen.AddFinancialGoal:
         return <AddFinancialGoalScreen onSave={addFinancialGoal} onCancel={() => setCurrentScreen(Screen.FinancialGoals)} userProfile={userProfile} addNotification={addNotification}/>;
       case Screen.Achievements:
@@ -587,12 +610,14 @@ const App: React.FC = () => {
         return <ChatScreen history={chatHistory} onSendMessage={handleSendMessage} onCancel={() => setCurrentScreen(Screen.Home)} userName={userProfile?.name || 'Explorer'} isLoading={isAssistantLoading} />;
       case Screen.SpendingCheck:
         return <SpendingCheckScreen userProfile={userProfile} goals={goals} onNavigate={setCurrentScreen} onPrepareExpense={handlePrepareExpense} addNotification={addNotification} />;
+      case Screen.PrivacyPolicy:
+        return <PrivacyPolicyScreen onBack={() => setCurrentScreen(Screen.Profile)} />;
       default:
         return <HomeScreen userProfile={userProfile} expenses={expenses} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
     }
   };
   
-  const showBottomNav = ![Screen.Welcome, Screen.SignUpLogin, Screen.Onboarding, Screen.SetVaultWish, Screen.VaultRevealed, Screen.Chat].includes(currentScreen);
+  const showBottomNav = ![Screen.Welcome, Screen.SignUpLogin, Screen.Onboarding, Screen.SetVaultWish, Screen.VaultRevealed, Screen.Chat, Screen.PrivacyPolicy].includes(currentScreen);
 
   return (
     <div className="min-h-screen bg-background font-sans text-primary">
