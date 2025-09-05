@@ -18,6 +18,7 @@ export enum Screen {
   VaultRevealed = 'VAULT_REVEALED',
   Game = 'GAME',
   Chat = 'CHAT',
+  SpendingCheck = 'SPENDING_CHECK',
 }
 
 export enum MoodType {

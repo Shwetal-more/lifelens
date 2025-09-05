@@ -12,6 +12,8 @@ interface AddExpenseScreenProps {
   expenseToEdit?: Expense | null;
   goals: FinancialGoal[];
   addNotification: (message: string, type: NotificationType) => void;
+  pendingData?: { amount: string, category: string } | null;
+  onClearPendingData: () => void;
 }
 
 const currencySymbols: { [key: string]: string } = {
@@ -23,7 +25,7 @@ const currencySymbols: { [key: string]: string } = {
 };
 
 
-const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, goals, addNotification }) => {
+const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, goals, addNotification, pendingData, onClearPendingData }) => {
   const isEditMode = !!expenseToEdit;
   const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
 
@@ -46,6 +48,14 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       setIsUseful(expenseToEdit.isUseful);
     }
   }, [isEditMode, expenseToEdit]);
+  
+  useEffect(() => {
+    if(pendingData && !isEditMode) {
+      setAmount(pendingData.amount);
+      setCategory(pendingData.category);
+      onClearPendingData();
+    }
+  }, [pendingData, isEditMode, onClearPendingData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse, Chat, Type } from "@google/genai";
 import { Expense, MoodType, MoodEntry, FinancialGoal, UserProfile, Quest } from '../types';
 
@@ -122,6 +123,49 @@ export const getMindfulSpendingPrompt = async (expense: Omit<Expense, 'id' | 'da
     console.error("Error getting mindful spending prompt:", error);
     return "Is this purchase a need or a want?";
   }
+};
+
+export const getSpendingNudge = async (
+    amount: number,
+    category: string,
+    userProfile: UserProfile,
+    goals: FinancialGoal[]
+): Promise<string> => {
+    try {
+        let specialConsideration = '';
+        if (userProfile.currency === 'INR') {
+            if (category.toLowerCase().includes('general') && amount > 100) {
+                specialConsideration = `This is over 100 INR at a general store, which might be a significant daily expense.`;
+            }
+        }
+        if (['hotel', 'subway', 'transport', 'transportation'].includes(category.toLowerCase())) {
+            specialConsideration += ` This is a travel-related expense.`;
+        }
+
+        const goalText = goals.length > 0
+            ? `They are saving for "${goals[0].name}" (Target: ${goals[0].targetAmount}, Saved: ${goals[0].savedAmount}).`
+            : "They have not set a specific savings goal yet.";
+
+        const prompt = `You are Kai, a friendly AI money coach. User ${userProfile.name} is considering a purchase.
+Details:
+- Amount: ${amount} ${userProfile.currency}
+- Category: ${category}
+- User's primary goal: ${goalText}
+- Context: ${specialConsideration}
+
+Generate a short, gentle, and thought-provoking question (under 25 words) to help them reflect on this purchase. Is it necessary? How does it align with their goals?
+The tone should be supportive and non-judgmental. Do not tell them what to do, just make them think.`;
+
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        return cleanText(response.text);
+
+    } catch (error) {
+        console.error("Error getting spending nudge:", error);
+        return "Does this purchase bring you closer to your goals?"; // A good fallback
+    }
 };
 
 export const getWeeklySmsInsight = async (expenses: Expense[], moods: MoodEntry[], userName:string): Promise<string> => {

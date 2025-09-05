@@ -13,7 +13,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
   const [age, setAge] = useState('');
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY'>('USD');
   const [phone, setPhone] = useState('');
-  const [smsEnabled, setSmsEnabled] = useState(false);
+  const [smsEnabled, setSmsEnabled] = useState(true);
   
   const handleSave = () => {
     if (name.trim() === '') {
@@ -26,12 +26,25 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
         setStep(2);
         return;
     }
+    if (smsEnabled && phone.trim() === '') {
+      alert('Please enter a phone number for SMS alerts, or uncheck the box to finish.');
+      setStep(4);
+      return;
+    }
     onSaveProfile({ name, age: parseInt(age, 10), currency, phone, smsEnabled });
   };
   
   const handleEnableNotifications = async () => {
     await requestNotificationPermission();
     handleSave(); // Save after notification step
+  };
+
+  const handleNextStep = () => {
+    if (step === 4 && smsEnabled && phone.trim() === '') {
+        alert('Please enter a phone number for SMS alerts, or uncheck the box to proceed.');
+        return;
+    }
+    setStep(s => Math.min(totalSteps, s + 1))
   };
 
   const inputStyles = "w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none transition-shadow";
@@ -113,16 +126,15 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
         {step === 4 && (
             <div>
                 <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-secondary mb-1 ml-2">Phone Number (Optional)</label>
+                    <label htmlFor="phone" className="block text-sm font-medium text-secondary mb-1 ml-2">Phone Number</label>
                     <input
                         type="tel"
                         id="phone"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         className={inputStyles}
-                        placeholder="For SMS alerts and future features"
+                        placeholder="To receive SMS spending alerts"
                     />
-                     <p className="text-xs text-secondary mt-2 ml-2 italic">For future features like SMS alerts (you can skip this).</p>
                 </div>
                  <div className="flex items-center space-x-3 pt-4">
                     <input
@@ -133,7 +145,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
                         className="h-5 w-5 rounded border-gray-300 text-accent focus:ring-accent"
                     />
                     <label htmlFor="sms" className="text-sm text-secondary">
-                        Enable SMS notifications (coming soon)
+                        Enable SMS spending alerts
                     </label>
                 </div>
             </div>
@@ -160,7 +172,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
         </button>
         {step < totalSteps ? (
           <button
-            onClick={() => setStep(s => Math.min(totalSteps, s + 1))}
+            onClick={handleNextStep}
             className="bg-primary text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-primary/90 transform hover:-translate-y-1 transition-all"
           >
              Next

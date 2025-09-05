@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -20,6 +21,7 @@ import VaultRevealedScreen from './screens/WishRevealedScreen';
 import GameScreen from './screens/GameScreen';
 import ChatScreen from './screens/ChatScreen';
 import { Chat } from '@google/genai';
+import SpendingCheckScreen from './screens/SpendingCheckScreen';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -97,6 +99,7 @@ const App: React.FC = () => {
   // Editing state
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [pendingExpenseData, setPendingExpenseData] = useState<{ amount: string, category: string } | null>(null);
 
   // Gamification State
   const [streak, setStreak] = useState(1);
@@ -471,6 +474,11 @@ const App: React.FC = () => {
     setRevealedGoal(null);
     setCurrentScreen(Screen.Home);
   };
+
+  const handlePrepareExpense = (data: { amount: string, category: string }) => {
+    setPendingExpenseData(data);
+    setCurrentScreen(Screen.AddExpense);
+  };
   
   const totalSaved = useMemo(() => goals.reduce((sum, g) => sum + g.savedAmount, 0), [goals]);
   const brixCoins = useMemo(() => {
@@ -551,7 +559,7 @@ const App: React.FC = () => {
       case Screen.Home:
         return <HomeScreen userProfile={userProfile} expenses={expenses} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
       case Screen.AddExpense:
-        return <AddExpenseScreen userProfile={userProfile} onSave={saveExpense} onCancel={() => { setEditingExpenseId(null); setCurrentScreen(Screen.Home); }} onDelete={deleteExpense} expenseToEdit={expenseToEdit} goals={goals} addNotification={addNotification} />;
+        return <AddExpenseScreen userProfile={userProfile} onSave={saveExpense} onCancel={() => { setEditingExpenseId(null); setCurrentScreen(Screen.Home); }} onDelete={deleteExpense} expenseToEdit={expenseToEdit} goals={goals} addNotification={addNotification} pendingData={pendingExpenseData} onClearPendingData={() => setPendingExpenseData(null)} />;
       case Screen.InnerCompass:
         return <InnerCompassScreen expenses={expenses} moods={moods} userProfile={userProfile} onSaveMood={addMood} />;
       case Screen.Notes:
@@ -577,6 +585,8 @@ const App: React.FC = () => {
         return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} />;
       case Screen.Chat:
         return <ChatScreen history={chatHistory} onSendMessage={handleSendMessage} onCancel={() => setCurrentScreen(Screen.Home)} userName={userProfile?.name || 'Explorer'} isLoading={isAssistantLoading} />;
+      case Screen.SpendingCheck:
+        return <SpendingCheckScreen userProfile={userProfile} goals={goals} onNavigate={setCurrentScreen} onPrepareExpense={handlePrepareExpense} addNotification={addNotification} />;
       default:
         return <HomeScreen userProfile={userProfile} expenses={expenses} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
     }

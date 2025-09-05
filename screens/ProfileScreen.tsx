@@ -21,10 +21,14 @@ interface ProfileScreenProps {
   onNavigate: (screen: Screen) => void;
 }
 
+const currencySymbols: { [key: string]: string } = {
+  'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥',
+};
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, onSettingsChange, onNavigate }) => {
   const [notificationStatus, setNotificationStatus] = useState<NotificationPermission>('default');
   const [savingsTargetInput, setSavingsTargetInput] = useState(settings.savingsTarget.amount.toString());
+  const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
 
   useEffect(() => {
     setNotificationStatus(getNotificationPermission());
@@ -90,20 +94,23 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, on
                     <p className="font-semibold">Monthly Savings Target</p>
                     <p className="text-sm text-secondary">Set a goal to unlock rewards.</p>
                 </div>
-                <input 
-                  type="number"
-                  value={savingsTargetInput}
-                  onChange={(e) => setSavingsTargetInput(e.target.value)}
-                  onBlur={handleSavingsTargetBlur}
-                  className="w-24 px-2 py-1 text-right bg-background rounded-lg shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none"
-                />
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-secondary">{currencySymbol}</span>
+                  <input 
+                    type="number"
+                    value={savingsTargetInput}
+                    onChange={(e) => setSavingsTargetInput(e.target.value)}
+                    onBlur={handleSavingsTargetBlur}
+                    className="w-28 pl-6 pr-2 py-1 text-right bg-background rounded-lg shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none"
+                  />
+                </div>
             </div>
         </div>
         <div className="bg-card p-4 rounded-2xl shadow-card">
             <div className="flex justify-between items-center">
                 <div>
-                    <p className="font-semibold">Real-time AI Insights</p>
-                    <p className="text-sm text-secondary">Get mindful spending alerts.</p>
+                    <p className="font-semibold">Push Notifications</p>
+                    <p className="text-sm text-secondary">Get daily reminders.</p>
                 </div>
                 {getStatusChip()}
             </div>
@@ -115,6 +122,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, on
                     {notificationStatus === 'denied' && <p className="text-xs text-secondary mt-2 text-center">You've previously blocked notifications. Please enable them in your browser settings to use this feature.</p>}
                 </div>
             )}
+        </div>
+
+        <div className="bg-card p-4 rounded-2xl shadow-card">
+          <h3 className="font-semibold mb-2">Mindful Spending Alerts</h3>
+          <p className="text-sm text-secondary mb-3">
+            We'll automatically provide an AI nudge in the 'Mindful Spend Check' screen for these conditions:
+          </p>
+          <ul className="list-disc list-inside text-sm text-primary space-y-1">
+            <li>Any spending in 'Hotel' or 'Subway' categories.</li>
+            <li>'General Store' purchases over {currencySymbol}100.</li>
+          </ul>
         </div>
         
         <div className="bg-card p-4 rounded-2xl shadow-card flex justify-center items-center cursor-pointer mt-6 transition-transform transform hover:-translate-y-0.5">
