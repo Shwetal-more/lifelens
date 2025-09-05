@@ -4,6 +4,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import type { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData } from "../types"
 import { getPirateRiddle, getFinancialQuest, getGameIntroStory } from "../services/geminiService"
+import { speechService } from "../services/speechService"
 import {
   SeaTile,
   GrasslandTile,
@@ -55,6 +56,19 @@ const TreasureMapIcon = ({ className }: { className?: string }) => (
     <path d="M42.5 39l-4 4m0-4l4 4" stroke="#D32F2F" strokeWidth="3" strokeLinecap="round" />
   </svg>
 )
+
+const SpeakerIcon = ({ enabled }: { enabled: boolean }) => (
+    enabled ? (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+            <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 0 0 1.5 12c0 .898.121 1.768.348 2.595.341 1.24 1.518 1.905 2.66 1.905H6.44l4.5 4.5c.945.945 2.56.276 2.56-1.06V4.06zM18.584 5.106a.75.75 0 0 1 1.06 0c3.092 3.092 3.092 8.19 0 11.284a.75.75 0 0 1-1.06-1.06 6.75 6.75 0 0 0 0-9.164.75.75 0 0 1 0-1.06z" />
+            <path d="M16.03 7.66a.75.75 0 0 1 1.06 0c1.562 1.562 1.562 4.094 0 5.656a.75.75 0 1 1-1.06-1.06 2.75 2.75 0 0 0 0-3.536.75.75 0 0 1 0-1.06z" />
+        </svg>
+    ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+            <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 0 0 1.5 12c0 .898.121 1.768.348 2.595.341 1.24 1.518 1.905 2.66 1.905H6.44l4.5 4.5c.945.945 2.56.276 2.56-1.06V4.06zM17.78 9.22a.75.75 0 1 0-1.06 1.06L18.44 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L19.5 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L20.56 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L19.5 10.94l-1.72-1.72z" />
+        </svg>
+    )
+);
 
 // --- GAME DATA ---
 const brixCatalog: BrixComponent[] = [
@@ -357,14 +371,102 @@ const GameScreen: React.FC<GameScreenProps> = ({
     y: number;
   } | null>(null);
 
+  // Timer State
+  const [timer, setTimer] = useState<number | null>(null);
+  const [timerPhase, setTimerPhase] = useState<'reading' | 'answering' | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Intro State
   const [isIntroModalOpen, setIntroModalOpen] = useState(false)
   const [isIntroLoading, setIsIntroLoading] = useState(true)
   const [introStory, setIntroStory] = useState("")
   
-  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const currentQuest = useMemo(() => gameState.quests.find((q) => !q.isCompleted), [gameState.quests])
+  
+  // Voice-over effects
+  useEffect(() => {
+    if (isIntroModalOpen && !isIntroLoading && introStory && gameState.isVoiceOverEnabled) {
+      speechService.speak(introStory);
+    }
+    return () => speechService.cancel();
+  }, [isIntroModalOpen, isIntroLoading, introStory, gameState.isVoiceOverEnabled]);
+
+  useEffect(() => {
+    if (gameState.isVoiceOverEnabled) {
+      if (isQuestOpen && currentQuest && !questFeedback && timerPhase === 'reading') {
+        let speechText = `${currentQuest.title}. ${currentQuest.description}`;
+        
+        if (currentQuest.type === 'riddle' && currentQuest.data.question) {
+            speechText += ` The riddle is: ${currentQuest.data.question}`;
+        } else if (currentQuest.type === 'decision' && currentQuest.data.scenario) {
+            speechText += ` ${currentQuest.data.scenario}`;
+        } else if (currentQuest.type === 'riddle_challenge' && gameState.activeMinigameState && currentQuest.data.riddles) {
+            const riddle = currentQuest.data.riddles[gameState.activeMinigameState.progress];
+            if (riddle && riddle.question) {
+                speechText += ` Riddle ${gameState.activeMinigameState.progress + 1}. ${riddle.question}`;
+            }
+        }
+
+        speechService.speak(speechText);
+      } else if (questFeedback) {
+        speechService.speak(questFeedback);
+      }
+    }
+    return () => speechService.cancel();
+  }, [isQuestOpen, currentQuest, questFeedback, gameState.isVoiceOverEnabled, timerPhase, gameState.activeMinigameState]);
+  
+  // Cleanup speech on unmount
+  useEffect(() => {
+    return () => speechService.cancel();
+  }, []);
+
+  // Timer logic
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+    }
+    setTimer(null);
+    setTimerPhase(null);
+  }, []);
+
+  useEffect(() => {
+      if (isQuestOpen && currentQuest) {
+          setTimerPhase('reading');
+          setTimer(15);
+      } else {
+          stopTimer();
+      }
+  }, [isQuestOpen, currentQuest, stopTimer]);
+
+  useEffect(() => {
+      if (timer === null || timerPhase === null) return;
+
+      if (timer > 0) {
+          timerRef.current = setInterval(() => setTimer(t => (t !== null ? t - 1 : null)), 1000);
+      } else { // timer === 0
+          if (timerPhase === 'reading') {
+              setTimerPhase('answering');
+              setTimer(15);
+          } else { // answering time is up
+              stopTimer();
+              setQuestFeedback("Time's up, matey! Try again later.");
+              setTimeout(() => {
+                  setIsQuestOpen(false);
+                  setQuestFeedback(null);
+              }, 2000);
+          }
+      }
+      
+      return () => {
+          if (timerRef.current) {
+              clearInterval(timerRef.current);
+          }
+      };
+  }, [timer, timerPhase, stopTimer]);
+
 
   useEffect(() => {
     const hasSeenIntro = localStorage.getItem("hasSeenGameIntro")
@@ -379,8 +481,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
   }, [userName])
   
   useEffect(() => {
-    if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
+    if (cooldownIntervalRef.current) {
+        clearInterval(cooldownIntervalRef.current);
     }
 
     const updateCooldown = () => {
@@ -390,7 +492,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
         
         if (remaining === 0) {
             setCooldownTime('');
-            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+            if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
             onUpdateGameState(gs => ({...gs})); // Force re-render to update button state
         } else {
             const minutes = Math.floor(remaining / 60000);
@@ -402,14 +504,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
     const now = Date.now();
     if (gameState.questCooldownUntil && gameState.questCooldownUntil > now) {
         updateCooldown(); // Initial call
-        timerIntervalRef.current = setInterval(updateCooldown, 1000);
+        cooldownIntervalRef.current = setInterval(updateCooldown, 1000);
     } else {
         setCooldownTime('');
     }
 
     return () => {
-        if (timerIntervalRef.current) {
-            clearInterval(timerIntervalRef.current);
+        if (cooldownIntervalRef.current) {
+            clearInterval(cooldownIntervalRef.current);
         }
     };
   }, [gameState.questCooldownUntil, onUpdateGameState]);
@@ -519,6 +621,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
   const completeQuest = useCallback(
     (quest: Quest) => {
+      stopTimer();
       const QUEST_COOLDOWN = 3 * 60 * 1000; // 3 minutes
       const QUEST_COOLDOWN_THRESHOLD = 5; // Cooldown after 5 quests
       const totalDoubloons = (quest.reward.doubloons || 0) + (quest.data.rewardCoins || 0);
@@ -585,12 +688,12 @@ const GameScreen: React.FC<GameScreenProps> = ({
           };
       });
     },
-    [onUpdateGameState],
+    [onUpdateGameState, stopTimer],
   )
 
   const handleQuestChoice = (choice: string | DecisionChoice) => {
     if (!currentQuest) return;
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    stopTimer();
 
     if (currentQuest.type === "riddle") {
         if (choice === currentQuest.data.answer) {
@@ -643,8 +746,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
       }
       
       const wordIsGuessed = word.split('').every(l => newGuessedLetters.includes(l));
-
+      
       if (wordIsGuessed) {
+          stopTimer(); // Stop timer on correct word guess
           setQuestFeedback(`Correct! The word was ${word}!`);
           setTimeout(() => {
               const nextProgress = progress + 1;
@@ -653,9 +757,13 @@ const GameScreen: React.FC<GameScreenProps> = ({
               } else {
                   setQuestFeedback("On to the next word!");
                   onUpdateGameState(gs => ({...gs, activeMinigameState: { type: 'hangman', progress: nextProgress, hangman: { guessedLetters: [], wrongGuesses: 0 }}}));
+                  // Restart timer for next word
+                  setTimerPhase('reading');
+                  setTimer(15);
               }
           }, 1500);
       } else if (newWrongGuesses >= 6) {
+          stopTimer();
           setQuestFeedback(`Ye failed! The word was ${word}. The curse remains... for now.`);
           setTimeout(() => {
             setIsQuestOpen(false);
@@ -785,66 +893,76 @@ const GameScreen: React.FC<GameScreenProps> = ({
       <Modal isOpen={isQuestOpen} onClose={() => setIsQuestOpen(false)} title={currentQuest?.title || "Quest"}>
         {currentQuest && (
           <div>
+            {timer !== null && timerPhase && (
+                <div className="text-center my-2 p-2 bg-amber-200/70 rounded-lg border border-amber-300">
+                    <p className="font-bold text-xs uppercase text-amber-800">
+                        {timerPhase === 'reading' ? 'Time to Ponder' : 'Time to Answer!'}
+                    </p>
+                    <p className="text-3xl font-bold text-primary">{timer}</p>
+                </div>
+            )}
             <p className="text-secondary mb-4 italic text-center">"{currentQuest.description}"</p>
             {questFeedback && ( <p className="my-4 text-center font-semibold text-accent-dark animate-fade-in">{questFeedback}</p> )}
 
-            {currentQuest.type === 'riddle' && currentQuest.data.question && (
-              <div className="space-y-2">
-                <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.question}"</p>
-                {(currentQuest.data.options || []).map((option, index) => (
-                  <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-center hover:bg-amber-200">
-                    {option}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {currentQuest.type === 'decision' && currentQuest.data.scenario && (
+            <div className={`${timerPhase === 'reading' ? 'opacity-50 pointer-events-none' : ''}`}>
+              {currentQuest.type === 'riddle' && currentQuest.data.question && (
                 <div className="space-y-2">
-                    <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.scenario}"</p>
-                    {(currentQuest.data.choices || []).map((choice, index) => (
-                        <button
-                            key={index}
-                            onClick={() => handleQuestChoice(choice)}
-                            className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-left hover:bg-amber-200"
-                        >
-                            {choice.text}
-                        </button>
-                    ))}
+                  <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.question}"</p>
+                  {(currentQuest.data.options || []).map((option, index) => (
+                    <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-center hover:bg-amber-200">
+                      {option}
+                    </button>
+                  ))}
                 </div>
-            )}
-            
-            {currentQuest.type === 'riddle_challenge' && gameState.activeMinigameState && (
-                <div className="space-y-2">
-                    <p className="text-sm text-center font-bold">Riddle {gameState.activeMinigameState.progress + 1} of {currentQuest.data.riddles!.length}</p>
-                    <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.riddles![gameState.activeMinigameState.progress].question}"</p>
-                    {(currentQuest.data.riddles![gameState.activeMinigameState.progress].options || []).map((option, index) => (
-                        <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-center hover:bg-amber-200">
-                            {option}
-                        </button>
-                    ))}
-                </div>
-            )}
+              )}
 
-            {currentQuest.type === 'hangman' && gameState.activeMinigameState?.hangman && (
-                <div className="text-center">
-                    <p className="text-sm text-center font-bold">Word {gameState.activeMinigameState.progress + 1} of {currentQuest.data.words!.length}</p>
-                    <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center">
-                        {currentQuest.data.words![gameState.activeMinigameState.progress].split('').map((char, i) => (
-                            <span key={i} className="inline-block w-8 border-b-4 border-primary">{gameState.activeMinigameState.hangman.guessedLetters.includes(char) ? char : '_'}</span>
-                        ))}
-                    </div>
-                    <p>Wrong Guesses: {gameState.activeMinigameState.hangman.wrongGuesses} / 6</p>
-                    <div className="flex flex-wrap gap-2 justify-center mt-4">
-                        {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
-                            <button key={letter} onClick={() => handleHangmanGuess(letter)} disabled={gameState.activeMinigameState.hangman.guessedLetters.includes(letter)}
-                                className="w-8 h-8 font-bold bg-amber-100 rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-amber-200">
-                                {letter}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
+              {currentQuest.type === 'decision' && currentQuest.data.scenario && (
+                  <div className="space-y-2">
+                      <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.scenario}"</p>
+                      {(currentQuest.data.choices || []).map((choice, index) => (
+                          <button
+                              key={index}
+                              onClick={() => handleQuestChoice(choice)}
+                              className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-left hover:bg-amber-200"
+                          >
+                              {choice.text}
+                          </button>
+                      ))}
+                  </div>
+              )}
+              
+              {currentQuest.type === 'riddle_challenge' && gameState.activeMinigameState && (
+                  <div className="space-y-2">
+                      <p className="text-sm text-center font-bold">Riddle {gameState.activeMinigameState.progress + 1} of {currentQuest.data.riddles!.length}</p>
+                      <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.riddles![gameState.activeMinigameState.progress].question}"</p>
+                      {(currentQuest.data.riddles![gameState.activeMinigameState.progress].options || []).map((option, index) => (
+                          <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-center hover:bg-amber-200">
+                              {option}
+                          </button>
+                      ))}
+                  </div>
+              )}
+
+              {currentQuest.type === 'hangman' && gameState.activeMinigameState?.hangman && (
+                  <div className="text-center">
+                      <p className="text-sm text-center font-bold">Word {gameState.activeMinigameState.progress + 1} of {currentQuest.data.words!.length}</p>
+                      <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center">
+                          {currentQuest.data.words![gameState.activeMinigameState.progress].split('').map((char, i) => (
+                              <span key={i} className="inline-block w-8 border-b-4 border-primary">{gameState.activeMinigameState.hangman.guessedLetters.includes(char) ? char : '_'}</span>
+                          ))}
+                      </div>
+                      <p>Wrong Guesses: {gameState.activeMinigameState.hangman.wrongGuesses} / 6</p>
+                      <div className="flex flex-wrap gap-2 justify-center mt-4">
+                          {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
+                              <button key={letter} onClick={() => handleHangmanGuess(letter)} disabled={gameState.activeMinigameState.hangman.guessedLetters.includes(letter)}
+                                  className="w-8 h-8 font-bold bg-amber-100 rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-amber-200">
+                                  {letter}
+                              </button>
+                          ))}
+                      </div>
+                  </div>
+              )}
+            </div>
           </div>
         )}
       </Modal>
@@ -870,15 +988,19 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
       {/* --- HEADER & ACTIONS --- */}
       <header className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold text-primary" style={{ fontFamily: "'Palatino', 'serif'" }}>
-          Pirate's Legacy
-        </h1>
-        <button
-          onClick={() => setIsWorldMapOpen(true)}
-          className="p-2 rounded-full bg-card shadow-sm hover:bg-amber-100"
-        >
-          <TreasureMapIcon className="w-8 h-8" />
-        </button>
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold text-primary" style={{ fontFamily: "'Palatino', 'serif'" }}>
+            Pirate's Legacy
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+            <button onClick={() => onUpdateGameState(gs => ({ ...gs, isVoiceOverEnabled: !gs.isVoiceOverEnabled }))} className="p-2 rounded-full bg-card shadow-sm hover:bg-amber-100 text-primary">
+                <SpeakerIcon enabled={gameState.isVoiceOverEnabled ?? true} />
+            </button>
+            <button onClick={() => setIsWorldMapOpen(true)} className="p-2 rounded-full bg-card shadow-sm hover:bg-amber-100">
+                <TreasureMapIcon className="w-8 h-8" />
+            </button>
+        </div>
       </header>
       <p className="text-secondary -mt-4 mb-4">Captain {userName}'s Treasure Island</p>
 

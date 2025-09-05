@@ -5,6 +5,7 @@ export enum Screen {
   Onboarding = 'ONBOARDING',
   Home = 'HOME',
   AddExpense = 'ADD_EXPENSE',
+  AddIncome = 'ADD_INCOME',
   InnerCompass = 'INNER_COMPASS',
   Notes = 'NOTES',
   Profile = 'PROFILE',
@@ -58,6 +59,13 @@ export interface Expense {
   emotion: MoodType;
   date: Date;
   isUseful: boolean;
+}
+
+export interface Income {
+  id: string;
+  amount: number;
+  source: string;
+  date: Date;
 }
 
 export interface MoodEntry {
@@ -172,6 +180,7 @@ export interface GameState {
   quests: Quest[];
   questCooldownUntil?: number;
   questsCompletedSinceCooldown?: number;
+  isVoiceOverEnabled?: boolean;
   specialItems?: string[]; // To store talisman, etc.
   activeMinigameState?: { // To hold progress for multi-stage quests
       type: 'hangman' | 'riddle_challenge';

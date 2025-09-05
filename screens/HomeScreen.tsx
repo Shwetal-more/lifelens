@@ -1,5 +1,5 @@
-import React from 'react';
-import { Expense, Screen, UserProfile, AevumVault, SavingsTarget } from '../types';
+import React, { useMemo } from 'react';
+import { Expense, Screen, UserProfile, AevumVault, SavingsTarget, Income } from '../types';
 
 // A simple placeholder for a confetti component
 const Confetti: React.FC = () => (
@@ -39,6 +39,7 @@ const Confetti: React.FC = () => (
 interface HomeScreenProps {
   userProfile: UserProfile | null;
   expenses: Expense[];
+  income: Income[];
   onNavigate: (screen: Screen) => void;
   onNavigateToChat: (context: 'general' | 'game') => void;
   onEditExpense: (id: string) => void;
@@ -65,9 +66,9 @@ const PlusIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
-const SmsIcon = ({ className }: { className?: string }) => (
+const IncomeIcon = ({ className }: { className?: string }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h.375m16.5 0h.375a1.125 1.125 0 0 1 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m0 0V6.375m0 12.375-1.5-1.5m1.5 1.5-1.5-1.5m0 0H3.75m16.5 0-1.5 1.5m-15-1.5L5.25 18l-1.5-1.5m15 0-1.5 1.5m1.5-1.5L18.75 18l1.5-1.5" />
     </svg>
 );
 
@@ -107,9 +108,26 @@ const NudgeIcon = ({ className }: { className?: string }) => (
 );
 
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, onNavigate, onNavigateToChat, onEditExpense, streak, aevumVault, dailyWhisper, totalSaved, showConfetti, weeklyInsight, savingsTarget }) => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, onNavigate, onNavigateToChat, onEditExpense, streak, aevumVault, dailyWhisper, totalSaved, showConfetti, weeklyInsight, savingsTarget }) => {
   const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
   
+  const financialSummary = useMemo(() => {
+    const now = new Date();
+    const last7Days = new Date(new Date().setDate(now.getDate() - 7));
+    
+    const totalIncome = income
+      .filter(i => new Date(i.date) >= last7Days)
+      .reduce((sum, i) => sum + i.amount, 0);
+
+    const totalExpenses = expenses
+      .filter(e => new Date(e.date) >= last7Days)
+      .reduce((sum, e) => sum + e.amount, 0);
+      
+    const savings = totalIncome - totalExpenses;
+    
+    return { totalIncome, totalExpenses, savings };
+  }, [income, expenses]);
+
   const savingsProgress = savingsTarget.amount > 0 ? Math.min((totalSaved / savingsTarget.amount) * 100, 100) : 0;
   const savingsGoalMet = savingsProgress >= 100;
 
@@ -131,6 +149,26 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, onNaviga
         <p className="text-secondary text-lg">Hello, {userProfile?.name || 'Explorer'}!</p>
         <h1 className="text-3xl font-bold text-primary">Ready for today's journey?</h1>
       </header>
+      
+      <div className="bg-card p-5 rounded-2xl shadow-card">
+          <h3 className="font-bold text-lg text-primary mb-3">7-Day Summary</h3>
+          <div className="flex justify-around text-center">
+              <div>
+                  <p className="text-sm text-secondary">Income</p>
+                  <p className="font-bold text-xl text-green-500">{currencySymbol}{financialSummary.totalIncome.toFixed(0)}</p>
+              </div>
+              <div>
+                  <p className="text-sm text-secondary">Expenses</p>
+                  <p className="font-bold text-xl text-red-500">{currencySymbol}{financialSummary.totalExpenses.toFixed(0)}</p>
+              </div>
+              <div>
+                  <p className="text-sm text-secondary">Savings</p>
+                  <p className={`font-bold text-xl ${financialSummary.savings >= 0 ? 'text-blue-500' : 'text-orange-500'}`}>
+                    {currencySymbol}{financialSummary.savings.toFixed(0)}
+                  </p>
+              </div>
+          </div>
+      </div>
       
       {aevumVault && dailyWhisper ? (
         <div className="bg-card p-5 rounded-2xl shadow-card text-center">
@@ -211,7 +249,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, onNaviga
 
       <div>
         <h2 className="text-xl font-bold text-primary mb-4">Log Your Activity</h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-3">
+            <button onClick={() => onNavigate(Screen.AddIncome)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
+                <IncomeIcon className="w-8 h-8 text-green-500"/>
+                <span className="font-semibold text-sm mt-2">Income</span>
+            </button>
             <button onClick={() => onNavigate(Screen.AddExpense)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
                 <PlusIcon className="w-8 h-8 text-primary"/>
                 <span className="font-semibold text-sm mt-2">Expense</span>
@@ -220,7 +262,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, onNaviga
                 <PlusIcon className="w-8 h-8 text-accent"/>
                 <span className="font-semibold text-sm mt-2">Mood</span>
             </button>
-            <button onClick={() => onNavigate(Screen.Notes)} className="col-span-1 flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
+            <button onClick={() => onNavigate(Screen.Notes)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
                 <PlusIcon className="w-8 h-8 text-secondary"/>
                 <span className="font-semibold text-sm mt-2">Note</span>
             </button>
