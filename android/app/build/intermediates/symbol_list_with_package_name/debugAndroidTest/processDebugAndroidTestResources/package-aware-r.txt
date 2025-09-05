@@ -1,3 +1,0 @@
-com.shwetal.lifelens.test
-style WhiteBackgroundDialogTheme
-style WhiteBackgroundTheme
