@@ -1,7 +1,24 @@
 import React, { useState } from 'react';
+import { auth } from '../services/firebase';
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
 
 interface SignUpLoginScreenProps {
   onAuthSuccess: (authData: { name: string; email?: string, phone?: string }) => void;
+}
+
+// Add a declaration for the window property to satisfy TypeScript
+declare global {
+    interface Window {
+        recaptchaVerifier?: RecaptchaVerifier;
+    }
 }
 
 const GoogleIcon = () => (
@@ -18,49 +35,99 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
   const [phoneStep, setPhoneStep] = useState<'number' | 'otp'>('number');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState('demo@lifelens.app');
+  const [password, setPassword] = useState('password');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError('');
-    setTimeout(() => {
-      onAuthSuccess({ name: 'Alex Johnson', email: 'alex.j@example.com' });
-    }, 1500);
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        onAuthSuccess({
+            name: result.user.displayName || 'New User',
+            email: result.user.email || undefined
+        });
+    } catch (error: any) {
+        setError("Failed to sign in with Google. Please try again.");
+        console.error(error);
+        setIsLoading(false);
+    }
   };
 
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setError('');
+      setIsLoading(true);
 
       if (phoneStep === 'number') {
           if (phoneNumber.trim().length > 8) {
-              setIsLoading(true);
-              setTimeout(() => {
-                setPhoneStep('otp');
-                setIsLoading(false);
-              }, 1000);
+              try {
+                  if (!window.recaptchaVerifier) {
+                      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                          'size': 'invisible'
+                      });
+                  }
+                  const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+                  setConfirmationResult(confirmation);
+                  setPhoneStep('otp');
+              } catch (error: any) {
+                  console.error("SMS Error:", error);
+                  setError('Failed to send code. Check number and try again.');
+              }
           } else {
               setError('Please enter a valid phone number.');
           }
       } else { // phoneStep === 'otp'
-          if (otp === '123456') {
-              setIsLoading(true);
-              setTimeout(() => {
-                onAuthSuccess({ name: 'Valued User', phone: phoneNumber });
-              }, 1000);
+          if (confirmationResult && otp.length === 6) {
+              try {
+                  const result = await confirmationResult.confirm(otp);
+                  onAuthSuccess({
+                      name: 'New User',
+                      phone: result.user.phoneNumber || phoneNumber
+                  });
+              } catch (error: any) {
+                  setError("Invalid OTP. Please try again.");
+              }
           } else {
-              setError("Invalid OTP. For the demo, please use 123456.");
+              setError("Please enter the 6-digit OTP.");
           }
       }
+      setIsLoading(false);
   };
 
-  const handleEmailLogin = () => {
+  const handleEmailLogin = async () => {
     setIsLoading(true);
     setError('');
-    setTimeout(() => {
-      onAuthSuccess({ name: 'Demo User', email: 'demo@lifelens.app' });
-    }, 1500);
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        onAuthSuccess({
+            name: userCredential.user.displayName || email.split('@')[0],
+            email: userCredential.user.email || undefined
+        });
+    } catch (error: any) {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
+            try {
+                const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                onAuthSuccess({
+                    name: email.split('@')[0],
+                    email: newUserCredential.user.email || undefined
+                });
+            } catch (createError: any) {
+                setError('Signup failed. Password must be at least 6 characters.');
+                setIsLoading(false);
+            }
+        } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            setError('Incorrect email or password.');
+            setIsLoading(false);
+        } else {
+            setError('An error occurred. Please try again.');
+            setIsLoading(false);
+        }
+    }
   };
 
 
@@ -96,7 +163,7 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
                     disabled={isLoading}
                     autoComplete="one-time-code"
                 />
-                <p className="text-xs text-secondary mt-2 text-center">A code was sent to {phoneNumber}. (Hint: it's 123456)</p>
+                <p className="text-xs text-secondary mt-2 text-center">A code was sent to {phoneNumber}.</p>
             </div>
         )}
         {error && <p className="text-red-500 text-sm text-center -mb-2">{error}</p>}
@@ -113,14 +180,16 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
             type="email"
             placeholder="Email"
             className="w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none"
-            defaultValue="demo@lifelens.app"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
           />
           <input
             type="password"
             placeholder="Password"
             className="w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none"
-            defaultValue="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
           />
           <button
@@ -136,6 +205,7 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
 
   return (
     <div className="h-full flex flex-col justify-center items-center p-6 bg-background relative">
+       <div id="recaptcha-container"></div>
        {isLoading && (
         <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
