@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useRef, useEffect } from 'react';
+import { speechService } from '../services/speechService';
 
 interface TutorialHighlightProps {
   targetId: string;
@@ -8,46 +9,88 @@ interface TutorialHighlightProps {
   totalSteps: number;
   onNext: () => void;
   onSkip: () => void;
+  isVoiceOverEnabled: boolean;
 }
 
-const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, text, step, totalSteps, onNext, onSkip }) => {
+const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, text, step, totalSteps, onNext, onSkip, isVoiceOverEnabled }) => {
   const [highlightBox, setHighlightBox] = useState<DOMRect | null>(null);
-  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
+  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({ opacity: 0 });
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Effect for voice-over
+  useEffect(() => {
+    if (isVoiceOverEnabled) {
+      // Delay to allow user to read and for UI to settle
+      const speechTimeout = setTimeout(() => {
+        speechService.speak(`${title}. ${text}`);
+      }, 500);
+
+      return () => {
+        clearTimeout(speechTimeout);
+        speechService.cancel();
+      };
+    } else {
+      speechService.cancel();
+    }
+  }, [title, text, isVoiceOverEnabled]);
+
 
   useLayoutEffect(() => {
-    const targetElement = document.getElementById(targetId);
-    if (targetElement) {
-      const rect = targetElement.getBoundingClientRect();
-      setHighlightBox(rect);
+    const calculatePosition = () => {
+      const targetElement = document.getElementById(targetId);
+      const popoverElement = popoverRef.current;
 
-      // Position popover below the element by default
-      let top = rect.bottom + 15;
-      let left = rect.left + rect.width / 2;
+      if (targetElement && popoverElement) {
+        const rect = targetElement.getBoundingClientRect();
+        setHighlightBox(rect);
+        
+        const popoverHeight = popoverElement.offsetHeight;
+        const popoverWidth = popoverElement.offsetWidth;
+        const spacing = 15;
 
-      // If it would go off-screen at the bottom, position it above
-      if (top + 150 > window.innerHeight) { // 150 is an estimated popover height
-        top = rect.top - 165;
-      }
-      
-      // Adjust left position to keep it on screen
-      const popoverWidth = 300; // Corresponds to max-w-sm
-      if (left + (popoverWidth / 2) > window.innerWidth) {
-        left = window.innerWidth - (popoverWidth / 2) - 16;
-      }
-      if (left - (popoverWidth / 2) < 0) {
-        left = (popoverWidth / 2) + 16;
-      }
+        // Vertical positioning
+        let top = rect.bottom + spacing;
+        if (top + popoverHeight > window.innerHeight) {
+          top = rect.top - popoverHeight - spacing;
+        }
 
-      setPopoverPosition({ top, left });
-    } else {
-        // If element not found, maybe it's in a modal that isn't open.
-        // Try again in a moment.
-        const timeoutId = setTimeout(() => {
-            const el = document.getElementById(targetId);
-            if(el) setHighlightBox(el.getBoundingClientRect());
-        }, 300);
-        return () => clearTimeout(timeoutId);
+        // Horizontal positioning (center aligned with transform)
+        let left = rect.left + rect.width / 2;
+
+        // Clamp left position to stay within viewport bounds
+        const minLeft = (popoverWidth / 2) + 8;
+        const maxLeft = window.innerWidth - (popoverWidth / 2) - 8;
+        left = Math.max(minLeft, Math.min(left, maxLeft));
+
+        setPopoverStyle({
+          top: `${top}px`,
+          left: `${left}px`,
+          transform: 'translateX(-50%)',
+          opacity: 1,
+        });
+      } else {
+         setHighlightBox(null);
+      }
+    };
+    
+    // Initial calculation might fail if target isn't rendered, so we try a few times.
+    const tryCalculate = (retries = 3, delay = 100) => {
+        calculatePosition();
+        const targetElement = document.getElementById(targetId);
+        if (!targetElement && retries > 0) {
+            setTimeout(() => tryCalculate(retries - 1, delay), delay);
+        }
     }
+    
+    tryCalculate();
+    
+    window.addEventListener('resize', calculatePosition);
+    window.addEventListener('scroll', calculatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', calculatePosition);
+      window.removeEventListener('scroll', calculatePosition, true);
+    };
   }, [targetId]);
 
   if (!highlightBox) {
@@ -58,7 +101,7 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
     <div className="fixed inset-0 z-[9998] pointer-events-none">
       {/* Spotlight effect */}
       <div
-        className="fixed transition-all duration-500 ease-in-out pointer-events-auto"
+        className="fixed transition-all duration-300 ease-in-out pointer-events-auto"
         style={{
           left: `${highlightBox.left - 4}px`,
           top: `${highlightBox.top - 4}px`,
@@ -68,9 +111,8 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
           borderRadius: '12px',
         }}
         onClick={(e) => {
-          // Allow click to pass through only for certain steps that require interaction
           if (step === 1 || step === 3) {
-            e.stopPropagation(); // Prevent closing from parent clicks
+            e.stopPropagation();
           } else {
             e.preventDefault();
             e.stopPropagation();
@@ -80,15 +122,12 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
 
       {/* Popover */}
       <div
-        className="fixed bg-[#FBF6E9] rounded-2xl p-4 shadow-xl max-w-sm w-full animate-fade-in border-4 border-double border-amber-800/70 pointer-events-auto"
-        style={{
-          top: `${popoverPosition.top}px`,
-          left: `${popoverPosition.left}px`,
-          transform: 'translateX(-50%)',
-        }}
+        ref={popoverRef}
+        className="fixed bg-[#FBF6E9] rounded-2xl p-4 shadow-xl max-w-sm w-[calc(100%-2rem)] animate-fade-in border-4 border-double border-amber-800/70 pointer-events-auto transition-opacity duration-300"
+        style={popoverStyle}
       >
         <div className="flex items-start gap-3">
-          <div className="text-4xl">🧞‍♂️</div>
+          <div className="text-4xl flex-shrink-0">🧞‍♂️</div>
           <div>
             <h3 className="text-lg font-bold text-amber-900" style={{ fontFamily: "'IM Fell English SC', serif" }}>{title}</h3>
             <p className="text-secondary mt-1">{text}</p>

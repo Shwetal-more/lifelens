@@ -975,6 +975,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
             totalSteps={tutorialConfig.length}
             onNext={handleTutorialNext}
             onSkip={handleTutorialSkip}
+            isVoiceOverEnabled={gameState.isVoiceOverEnabled ?? true}
         />
       )}
 
