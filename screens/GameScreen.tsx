@@ -1062,11 +1062,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
             const isRevealed = gameState.revealedCells.some((cell) => cell.x === mapX && cell.y === mapY);
             const placed = gameState.placedBrix.find((b) => b.x === mapX && b.y === mapY);
             const brixData = placed ? brixCatalog.find((b) => b.id === placed.brixId) : null;
-            
-            const canPlace = isRevealed && (terrain === 'L' || isCleared) && !placed && placingBrixId;
-            const isClearable = isRevealed && !isCleared && (terrain === 'F' || terrain === 'S');
-            const isSelectedForClearing = clearingCost && clearingCost.x === mapX && clearingCost.y === mapY;
+            const isLand = "LFMSEXHBDIPGN".includes(mapLayout[mapIndex]);
             const isOcean = terrain === "W" || terrain === "D";
+            const canPlace = isRevealed && (terrain === 'L' || isCleared) && !placed && placingBrixId;
 
             const isTutorialCell = mapX === 10 && mapY === 18;
             const cellId = isTutorialCell && !isFullMap ? 'tutorial-place-cell' : undefined;
@@ -1078,7 +1076,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
                     onClick={() => handleCellClick(mapX, mapY)}
                     onMouseEnter={(e) => handleMouseEnterCell(e, mapX, mapY)}
                     onMouseLeave={handleMouseLeaveCell}
-                    className={`w-full h-full relative transition-all aspect-square ${canPlace || isClearable ? "cursor-pointer" : ""} ${canPlace ? "ring-2 ring-accent ring-inset z-10" : ""} ${isSelectedForClearing ? "ring-4 ring-red-500 ring-inset z-10" : ""}`}
+                    className={`w-full h-full relative transition-all aspect-square ${canPlace ? "cursor-pointer ring-2 ring-accent ring-inset z-10" : ""}`}
                 >
                     {getTerrainTile(terrain)}
                     {brixData && <div className="absolute inset-0 flex items-center justify-center text-2xl md:text-4xl pointer-events-none drop-shadow-lg">{brixData.asset}</div>}

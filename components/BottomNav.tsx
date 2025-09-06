@@ -22,10 +22,11 @@ const CompassRoseIcon = ({ className }: { className?: string }) => (
 );
 
 const GoalsIcon = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h.375m16.5 0h.375a1.125 1.125 0 0 1 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m0 0V6.375m0 12.375-1.5-1.5m1.5 1.5-1.5-1.5m0 0H3.75m16.5 0-1.5 1.5m-15-1.5L5.25 18l-1.5-1.5m15 0-1.5 1.5m1.5-1.5L18.75 18l1.5-1.5" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
-  </svg>
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182.553-.44 1.278-.659 2.003-.659.768 0 1.536.219 2.121.659L15 9.182" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182.553-.44 1.278-.659 2.003-.659.768 0 1.536.219 2.121.659L15 9.182" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12.375a9 9 0 1 1 16.5 0v3.375A3.375 3.375 0 0 1 17.625 19.5H6.375A3.375 3.375 0 0 1 3 15.75V12.375Z" />
+    </svg>
 );
 
 const ProfileIcon = ({ className }: { className?: string }) => (
@@ -36,24 +37,10 @@ const ProfileIcon = ({ className }: { className?: string }) => (
 
 const IslandIcon = ({ className }: { className?: string }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-        {/* Globe Outline */}
-        <circle cx="12" cy="12" r="10" />
-        
-        {/* Landmass dots */}
-        <g fill="currentColor">
-            <circle cx="10" cy="8.5" r="0.75" />
-            <circle cx="12" cy="8" r="0.75" />
-            <circle cx="14" cy="9" r="0.75" />
-            
-            <circle cx="8.5" cy="11" r="0.75" />
-            <circle cx="10.5" cy="11.5" r="0.75" />
-            <circle cx="12.5" cy="12" r="0.75" />
-            <circle cx="15" cy="11" r="0.75" />
-            
-            <circle cx="9.5" cy="14" r="0.75" />
-            <circle cx="11.5" cy="15" r="0.75" />
-            <circle cx="13.5" cy="14.5" r="0.75" />
-        </g>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c-4.64 0-8.52-3.15-8.94-7.36.01-.05.02-.1.02-.16a9 9 0 0 1 17.84 0c0 .06-.01.11-.02.16-0.42 4.21-4.3 7.36-8.94 7.36Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12.25 3.75a.75.75 0 0 0-1.5 0v3.018a1.5 1.5 0 0 0 .5 1.06l1.25 1.25a.75.75 0 0 0 1.06 0l1.25-1.25a1.5 1.5 0 0 0 .5-1.06V3.75a.75.75 0 0 0-.75-.75h-.75Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.25 5.25a.75.75 0 0 0-1.5 0v2.268a1.5 1.5 0 0 0 .5 1.06l1.25 1.25a.75.75 0 0 0 1.06 0l1.25-1.25a1.5 1.5 0 0 0 .5-1.06V5.25a.75.75 0 0 0-.75-.75h-.75Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.25 5.25a.75.75 0 0 0-1.5 0v2.268a1.5 1.5 0 0 0 .5 1.06l1.25 1.25a.75.75 0 0 0 1.06 0l1.25-1.25a1.5 1.5 0 0 0 .5-1.06V5.25a.75.75 0 0 0-.75-.75h-.75Z" />
     </svg>
 );
 
