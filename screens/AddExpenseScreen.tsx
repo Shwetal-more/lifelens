@@ -1,6 +1,5 @@
 
 
-
 import React, { useState, useEffect } from 'react';
 import { Expense, MoodType, UserProfile, FinancialGoal, NotificationType } from '../types';
 import { getEmotionalSpendingInsight, getMindfulSpendingPrompt, getPostPurchaseReassurance } from '../services/geminiService';
@@ -19,13 +18,17 @@ interface AddExpenseScreenProps {
 }
 
 const currencySymbols: { [key: string]: string } = {
-  'USD': '$',
-  'EUR': '€',
-  'GBP': '£',
-  'INR': '₹',
-  'JPY': '¥',
+  'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥',
 };
 
+const moodEmojis: Record<MoodType, string> = {
+  [MoodType.Happy]: '😊',
+  [MoodType.Sad]: '😢',
+  [MoodType.Stressed]: '😥',
+  [MoodType.Excited]: '🤩',
+  [MoodType.Neutral]: '😐',
+  [MoodType.Anxious]: '😟',
+};
 
 const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, expenses, goals, addNotification, pendingData, onClearPendingData }) => {
   const isEditMode = !!expenseToEdit;
@@ -36,10 +39,12 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
   const [occasion, setOccasion] = useState('');
   const [emotion, setEmotion] = useState<MoodType>(MoodType.Neutral);
   const [isUseful, setIsUseful] = useState(true);
-  const [aiAdvice, setAiAdvice] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
   const [mindfulPrompt, setMindfulPrompt] = useState<string | null>(null);
   const [pendingExpense, setPendingExpense] = useState<Omit<Expense, 'id' | 'date'> | null>(null);
+  const [aiInsight, setAiInsight] = useState('');
+  const [isShowingInsight, setIsShowingInsight] = useState(false);
 
   useEffect(() => {
     if (isEditMode && expenseToEdit) {
@@ -59,6 +64,15 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     }
   }, [pendingData, isEditMode, onClearPendingData]);
 
+  // FIX: Replaced comma with pipe in Omit type to correctly form a union of keys.
+  const processAndShowInsight = async (expenseData: Omit<Expense, 'id' | 'date'>) => {
+    setIsLoading(true);
+    const insight = await getEmotionalSpendingInsight(expenseData, expenses);
+    setAiInsight(insight);
+    setIsShowingInsight(true);
+    setIsLoading(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const expenseData = {
@@ -70,6 +84,8 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     };
     if (!expenseData.amount || !expenseData.category) return;
     
+    setPendingExpense(expenseData);
+
     if (isEditMode) {
         onSave(expenseData);
         return;
@@ -79,19 +95,11 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       setIsLoading(true);
       const prompt = await getMindfulSpendingPrompt(expenseData, goals);
       setMindfulPrompt(prompt);
-      setPendingExpense(expenseData);
       setIsLoading(false);
       return; 
     }
-
-    setIsLoading(true);
-    const advice = await getEmotionalSpendingInsight(expenseData, expenses);
-    setAiAdvice(advice);
-    setIsLoading(false);
-
-    setTimeout(() => {
-        onSave(expenseData);
-    }, 3000);
+    
+    await processAndShowInsight(expenseData);
   };
 
   const handleDelete = () => {
@@ -102,18 +110,24 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
 
   const handleConfirmMindfulExpense = async () => {
     if (pendingExpense) {
-      const reassurance = await getPostPurchaseReassurance(pendingExpense, goals.length > 0 ? goals[0] : null);
-      addNotification(reassurance, 'info');
-      
-      onSave(pendingExpense);
       setMindfulPrompt(null);
-      setPendingExpense(null);
+      await processAndShowInsight(pendingExpense);
     }
   };
 
   const handleCancelMindfulExpense = () => {
     setMindfulPrompt(null);
     setPendingExpense(null);
+  };
+
+  const handleFinalizeSave = () => {
+    if (pendingExpense) {
+      if (!pendingExpense.isUseful) {
+        getPostPurchaseReassurance(pendingExpense, goals.length > 0 ? goals[0] : null)
+          .then(reassurance => addNotification(reassurance, 'info'));
+      }
+      onSave(pendingExpense);
+    }
   };
   
   const inputStyles = "w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none transition-shadow";
@@ -139,12 +153,20 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
 
       <h1 className="text-3xl font-bold text-primary mb-8 text-center">{isEditMode ? 'Edit Expense' : 'Add New Expense'}</h1>
       
-      {aiAdvice ? (
-        <div className="flex flex-col items-center justify-center h-64 text-center">
+      {isShowingInsight ? (
+        <div className="flex flex-col items-center justify-center text-center p-4">
             <h2 className="text-xl font-bold text-primary mb-4">A Mindful Moment</h2>
             <p className="text-secondary mb-2">Here's a reflection on your entry:</p>
-            <p className="text-2xl font-semibold text-primary italic bg-background p-4 rounded-xl">"{aiAdvice}"</p>
-            <p className="text-sm text-secondary mt-6 animate-pulse">Saving your expense...</p>
+            <div className="bg-background p-4 rounded-xl min-h-[6rem] flex items-center justify-center w-full">
+              <p className="text-xl font-semibold text-primary italic">"{aiInsight}"</p>
+            </div>
+            <button onClick={handleFinalizeSave} className="mt-8 w-full max-w-xs bg-accent text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:bg-accent-dark transform hover:-translate-y-1 transition-all">
+                Continue
+            </button>
+        </div>
+      ) : isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -189,17 +211,20 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
             />
           </div>
           <div>
-            <label htmlFor="emotion" className="block text-sm font-medium text-secondary mb-1 ml-2">How were you feeling?</label>
-            <select
-              id="emotion"
-              value={emotion}
-              onChange={(e) => setEmotion(e.target.value as MoodType)}
-              className={`${inputStyles} appearance-none`}
-            >
-              {Object.values(MoodType).map(mood => (
-                <option key={mood} value={mood}>{mood}</option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-secondary mb-2 ml-2">How were you feeling?</label>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+               {Object.entries(moodEmojis).map(([moodKey, emoji]) => (
+                  <button
+                    type="button"
+                    key={moodKey}
+                    onClick={() => setEmotion(moodKey as MoodType)}
+                    className={`flex flex-col items-center justify-center p-2 bg-card rounded-2xl shadow-card transition-all transform hover:-translate-y-1 ${emotion === moodKey ? 'ring-2 ring-accent' : 'ring-2 ring-transparent'}`}
+                  >
+                    <span className="text-3xl">{emoji}</span>
+                    <span className="mt-1 text-xs font-semibold text-primary">{moodKey}</span>
+                  </button>
+               ))}
+            </div>
           </div>
           <div className="flex items-center justify-between bg-card p-3 rounded-xl shadow-soft-inset">
             <label htmlFor="isUsefulToggle" className="font-medium text-secondary flex-grow cursor-pointer">
