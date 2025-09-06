@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Screen, UserProfile, SavingsTarget } from '../types';
 import { getNotificationPermission, requestNotificationPermission } from '../services/notificationService';
@@ -19,13 +20,14 @@ interface ProfileScreenProps {
   onSettingsChange: (settings: Partial<AppSettings>) => void;
   onProfileChange: (profileData: Partial<UserProfile>) => void;
   onNavigate: (screen: Screen) => void;
+  onLogout: () => void;
 }
 
 const currencySymbols: { [key: string]: string } = {
   'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥',
 };
 
-const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, onSettingsChange, onProfileChange, onNavigate }) => {
+const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, onSettingsChange, onProfileChange, onNavigate, onLogout }) => {
   const [notificationStatus, setNotificationStatus] = useState<NotificationPermission>('default');
   const [savingsTargetInput, setSavingsTargetInput] = useState(settings.savingsTarget.amount.toString());
   const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
@@ -165,7 +167,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, on
           </ul>
         </div>
         
-        <div className="bg-card p-4 rounded-2xl shadow-card flex justify-center items-center cursor-pointer mt-6 transition-transform transform hover:-translate-y-0.5">
+        <div onClick={onLogout} className="bg-card p-4 rounded-2xl shadow-card flex justify-center items-center cursor-pointer mt-6 transition-transform transform hover:-translate-y-0.5">
           <span className="font-semibold text-red-500">Log Out</span>
         </div>
       </div>

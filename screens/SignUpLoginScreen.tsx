@@ -1,14 +1,11 @@
+
+
 import React, { useState } from 'react';
 import { auth } from '../services/firebase';
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  type ConfirmationResult,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-} from 'firebase/auth';
+// FIX: Switched to Firebase v9 compat imports to resolve module export errors.
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+
 
 interface SignUpLoginScreenProps {
   onAuthSuccess: (authData: { name: string; email?: string, phone?: string }) => void;
@@ -17,7 +14,8 @@ interface SignUpLoginScreenProps {
 // Add a declaration for the window property to satisfy TypeScript
 declare global {
     interface Window {
-        recaptchaVerifier?: RecaptchaVerifier;
+        // FIX: Updated type to use the v8-compatible RecaptchaVerifier.
+        recaptchaVerifier?: firebase.auth.RecaptchaVerifier;
     }
 }
 
@@ -37,19 +35,22 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('demo@lifelens.app');
   const [password, setPassword] = useState('password');
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  // FIX: Updated type to use the v8-compatible ConfirmationResult.
+  const [confirmationResult, setConfirmationResult] = useState<firebase.auth.ConfirmationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError('');
-    const provider = new GoogleAuthProvider();
+    // FIX: Use v8-style provider.
+    const provider = new firebase.auth.GoogleAuthProvider();
     try {
-        const result = await signInWithPopup(auth, provider);
+        // FIX: Use v8-style signInWithPopup.
+        const result = await auth.signInWithPopup(provider);
         onAuthSuccess({
-            name: result.user.displayName || 'New User',
-            email: result.user.email || undefined
+            name: result.user?.displayName || 'New User',
+            email: result.user?.email || undefined
         });
     } catch (error: any) {
         setError("Failed to sign in with Google. Please try again.");
@@ -67,11 +68,13 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
           if (phoneNumber.trim().length > 8) {
               try {
                   if (!window.recaptchaVerifier) {
-                      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                      // FIX: Use v8-style RecaptchaVerifier.
+                      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                           'size': 'invisible'
                       });
                   }
-                  const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+                  // FIX: Use v8-style signInWithPhoneNumber.
+                  const confirmation = await auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier);
                   setConfirmationResult(confirmation);
                   setPhoneStep('otp');
               } catch (error: any) {
@@ -87,7 +90,7 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
                   const result = await confirmationResult.confirm(otp);
                   onAuthSuccess({
                       name: 'New User',
-                      phone: result.user.phoneNumber || phoneNumber
+                      phone: result.user?.phoneNumber || phoneNumber
                   });
               } catch (error: any) {
                   setError("Invalid OTP. Please try again.");
@@ -103,18 +106,20 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
     setIsLoading(true);
     setError('');
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // FIX: Use v8-style signInWithEmailAndPassword.
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
         onAuthSuccess({
-            name: userCredential.user.displayName || email.split('@')[0],
-            email: userCredential.user.email || undefined
+            name: userCredential.user?.displayName || email.split('@')[0],
+            email: userCredential.user?.email || undefined
         });
     } catch (error: any) {
         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
             try {
-                const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                // FIX: Use v8-style createUserWithEmailAndPassword.
+                const newUserCredential = await auth.createUserWithEmailAndPassword(email, password);
                 onAuthSuccess({
                     name: email.split('@')[0],
-                    email: newUserCredential.user.email || undefined
+                    email: newUserCredential.user?.email || undefined
                 });
             } catch (createError: any) {
                 setError('Signup failed. Password must be at least 6 characters.');
@@ -222,9 +227,12 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
                         <GoogleIcon />
                         Sign in with Google
                     </button>
-                    <button onClick={() => setAuthMethod('phone')} disabled={isLoading} className="w-full bg-card text-primary font-bold py-3 px-4 rounded-xl shadow-card hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:transform-none">
-                        Sign in with Phone
-                    </button>
+                    <div className="space-y-1">
+                        <button onClick={() => setAuthMethod('phone')} disabled={isLoading} className="w-full bg-background border border-secondary/50 text-secondary font-bold py-3 px-4 rounded-xl hover:border-secondary disabled:opacity-70 transition-colors">
+                            Sign in with Phone
+                        </button>
+                        <p className="text-xs text-secondary px-4 text-center">Not recommended. Some features may be limited.</p>
+                    </div>
                      <div className="relative flex py-3 items-center">
                         <div className="flex-grow border-t border-gray-200"></div>
                         <span className="flex-shrink mx-4 text-xs text-secondary">OR</span>

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType, Income } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -27,6 +28,7 @@ import { speechService } from './services/speechService';
 import SmsImportScreen from './screens/SmsImportScreen';
 import { usePersistentState } from './hooks/usePersistentState';
 import { sendNotification } from './services/notificationService';
+import { auth } from './services/firebase';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -494,6 +496,17 @@ const App: React.FC = () => {
     setCurrentScreen(Screen.AddExpense);
   };
   
+  const handleLogout = async () => {
+    try {
+        // FIX: Used v8-compatible signOut method.
+        await auth.signOut();
+    } catch (error) {
+        console.error("Error signing out from Firebase:", error);
+    }
+    localStorage.clear();
+    window.location.reload();
+  };
+
   const totalSaved = useMemo(() => goals.reduce((sum, g) => sum + g.savedAmount, 0), [goals]);
   const brixCoins = useMemo(() => {
     const earned = totalSaved * COIN_CONVERSION_RATE;
@@ -584,7 +597,7 @@ const App: React.FC = () => {
       case Screen.Notes:
         return <NotesScreen onSave={addNote} onCancel={() => setCurrentScreen(Screen.Home)} />;
       case Screen.Profile:
-        return <ProfileScreen userProfile={userProfile} settings={settings} onSettingsChange={handleUpdateSettings} onProfileChange={handleUpdateProfile} onNavigate={(screen) => setCurrentScreen(screen)} />;
+        return <ProfileScreen userProfile={userProfile} settings={settings} onSettingsChange={handleUpdateSettings} onProfileChange={handleUpdateProfile} onNavigate={(screen) => setCurrentScreen(screen)} onLogout={handleLogout} />;
       case Screen.FinancialGoals:
         return <FinancialGoalsScreen goals={goals} onNavigate={setCurrentScreen} userProfile={userProfile} />;
       case Screen.AddFinancialGoal:
