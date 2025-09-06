@@ -180,6 +180,7 @@ export interface GameState {
   inventory: UserBrix[];
   placedBrix: PlacedBrix[];
   revealedCells: {x: number, y: number}[];
+  clearedCells?: {x: number, y: number}[];
   quests: Quest[];
   questCooldownUntil?: number;
   questsCompletedSinceCooldown?: number;

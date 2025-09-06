@@ -53,21 +53,19 @@ interface AppSettings {
 }
 
 const initialAchievements: Badge[] = [
-  { id: AchievementType.FIRST_WEEK_STREAK, name: 'First Week Streak', description: 'Maintain a 7-day streak.', unlocked: false },
-  { id: AchievementType.MINDFUL_SPENDER, name: 'Mindful Spender', description: 'Log 5 expenses in a single day.', unlocked: false },
-  { id: AchievementType.MOOD_MASTER, name: 'Mood Master', description: 'Log your mood for 7 consecutive days.', unlocked: false },
+  { id: AchievementType.FIRST_WEEK_STREAK, name: 'First Week Streak', 'description': 'Maintain a 7-day streak.', unlocked: false },
+  { id: AchievementType.MINDFUL_SPENDER, name: 'Mindful Spender', 'description': 'Log 5 expenses in a single day.', unlocked: false },
+  { id: AchievementType.MOOD_MASTER, name: 'Mood Master', 'description': 'Log your mood for 7 consecutive days.', unlocked: false },
 ];
 
 const COIN_CONVERSION_RATE = 2; // 1 currency unit = 2 Doubloons
 
 // Helper function to calculate initially revealed land cells
 const getInitialRevealedCells = () => {
-    // Start with the shipwreck tile and a small starting beach area of two adjacent land tiles.
-    // This gives the player a starting point and a small area to begin building.
+    // Definitive Fix: Reveal the shipwreck and the correct adjacent land tile on the new map.
     return [
-        { x: 4, y: 19 }, // Shipwreck 'H'
-        { x: 6, y: 18 }, // Land 'L'
-        { x: 7, y: 18 }, // Land 'L'
+        { x: 10, y: 19 }, // Shipwreck 'H'
+        { x: 10, y: 18 }, // The one starting land tile 'L'
     ];
 };
 
@@ -90,8 +88,11 @@ const appTutorialConfig = [
     // --- TRANSITION TO GAME ---
     { targetId: 'tutorial-nav-island', screen: Screen.InnerCompass, title: "Your Financial Legacy", text: "Finally, let's visit your island. Your real-world financial journey powers a game where you build a legacy. Tap the Island icon!", advancesBy: 'action' as const },
     
+    // --- FULL MAP VIEW STEP ---
+    { targetId: 'full-map-view-step', screen: Screen.Game, title: "A World of Possibility", text: "This is your island, shrouded in fog. Completing quests will reveal it piece by piece. Let's focus on your start.", advancesBy: 'next' as const },
+
     // --- HAND-OFF TO GAME ---
-    { targetId: 'pirates-legacy-header', screen: Screen.Game, title: "Welcome to Your Island!", text: "Every saving and goal you achieve helps you build your paradise. A more detailed game tutorial will now begin. This concludes the main app tour. Enjoy!", advancesBy: 'next' as const },
+    { targetId: 'pirates-legacy-header', screen: Screen.Game, title: "Welcome to Your Island!", text: "Every saving and goal you achieve helps you build your paradise. A more detailed game tutorial will now begin. Enjoy!", advancesBy: 'next' as const },
 ];
 
 
@@ -142,7 +143,8 @@ const App: React.FC = () => {
     revealedCells: getInitialRevealedCells(), 
     quests: [], 
     questsCompletedSinceCooldown: 0, 
-    isVoiceOverEnabled: true 
+    isVoiceOverEnabled: true,
+    clearedCells: [],
   });
   const [achievements, setAchievements] = usePersistentState<Badge[]>('achievements', initialAchievements);
   const [settings, setSettings] = usePersistentState<AppSettings>('appSettings', {
@@ -373,9 +375,9 @@ const App: React.FC = () => {
 
   const handleLogActivity = useCallback(() => {
     const today = new Date();
-    if (!lastLogDate || !isSameDay(today, lastLogDate)) {
+    if (!lastLogDate || !isSameDay(today, new Date(lastLogDate))) {
       let newStreak;
-      if (lastLogDate && isYesterday(today, lastLogDate)) {
+      if (lastLogDate && isYesterday(today, new Date(lastLogDate))) {
         newStreak = streak + 1;
       } else {
         newStreak = 1;
@@ -389,7 +391,7 @@ const App: React.FC = () => {
       
       setLastLogDate(today);
     }
-  }, [lastLogDate, streak, setLastLogDate]);
+  }, [lastLogDate, streak, setLastLogDate, setStreak]);
   
   const handleAuthSuccess = (authData: { name: string; email?: string; phone?: string }) => {
     const newUserProfile: UserProfile = {
@@ -642,7 +644,7 @@ const App: React.FC = () => {
   
   // --- Screen Rendering ---
   if (!isInitialized) {
-    return <div className="h-screen w-full flex items-center justify-center"><p>Loading...</p></div>;
+    return <div className="h-full w-full flex items-center justify-center"><p>Loading...</p></div>;
   }
   
   const renderScreen = () => {
@@ -681,7 +683,8 @@ const App: React.FC = () => {
         }
         return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
       case Screen.Game:
-        return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} addNotification={addNotification} isAppTutorialRunning={appTutorialState.isActive} />;
+        const currentTutorialStepId = appTutorialState.isActive ? appTutorialConfig[appTutorialState.step].targetId : null;
+        return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} addNotification={addNotification} isAppTutorialRunning={appTutorialState.isActive} appTutorialStepId={currentTutorialStepId} />;
       case Screen.Chat:
         return <ChatScreen history={chatHistory} onSendMessage={handleSendMessage} onCancel={() => setCurrentScreen(Screen.Home)} userName={userProfile?.name || 'Explorer'} isLoading={isAssistantLoading} />;
       case Screen.SpendingCheck:
@@ -695,10 +698,10 @@ const App: React.FC = () => {
     }
   };
   
-  const showBottomNav = ![Screen.Welcome, Screen.SignUpLogin, Screen.Onboarding, Screen.SetVaultWish, Screen.VaultRevealed, Screen.Chat, Screen.PrivacyPolicy].includes(currentScreen);
+  const showNav = ![Screen.Welcome, Screen.SignUpLogin, Screen.Onboarding, Screen.SetVaultWish, Screen.VaultRevealed, Screen.Chat, Screen.PrivacyPolicy].includes(currentScreen);
 
   return (
-    <div className="min-h-screen bg-background font-sans text-primary">
+    <div className="h-full bg-background font-sans text-primary">
         {appTutorialState.isActive && (
             <TutorialHighlight
                 targetId={appTutorialConfig[appTutorialState.step].targetId}
@@ -733,11 +736,13 @@ const App: React.FC = () => {
             }
         `}</style>
 
-      <div className="container mx-auto max-w-lg h-screen flex flex-col">
-        <main className="flex-grow overflow-y-auto pb-24">
-          {renderScreen()}
+      <div className="h-full flex flex-col">
+        <main className="flex-grow overflow-y-auto hide-scrollbar pb-24">
+            <div className="w-full max-w-2xl mx-auto">
+              {renderScreen()}
+            </div>
         </main>
-        {showBottomNav && <BottomNav activeScreen={currentScreen} onNavigate={handleNavigation} />}
+        {showNav && <BottomNav activeScreen={currentScreen} onNavigate={handleNavigation} />}
       </div>
     </div>
   );

@@ -44,22 +44,30 @@ const QuestIcon = () => (
     </svg>
 )
 
+const CompassRoseIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg className={className} style={style} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <polygon points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9" fill="currentColor" />
+    <circle cx="12" cy="12" r="3" fill="var(--bg-color, #FFF)" stroke="currentColor" strokeWidth="2"/>
+  </svg>
+);
+
+
 const TreasureMapIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
       d="M6.23,57.18c-3.52-1-5.4-4.59-4.39-8.11,1.1-3.83,5.13-5.91,8.65-4.91l16.29,4.68s10.6,3.05,15.93-3.92c5.33-6.97,3.93-15.93,3.93-15.93l-4.68-16.29c-1-3.52-4.59-5.4-8.11-4.39-3.83,1.1-5.91,5.13-4.91,8.65l4.68,16.29s3.05,10.6-3.92,15.93c-6.97,5.33-15.93,3.93-15.93,3.93l-16.29-4.68Z"
-      fill="#FDEEBF"
-      stroke="#A1887F"
+      className="text-yellow-100 fill-current stroke-yellow-800/50"
       strokeWidth="2"
     />
     <path
       d="M21.5 40.5s3.5-6.5 11-6.5 10,5 10,5"
-      stroke="#E57373"
+      stroke="currentColor" className="text-red-500"
       strokeWidth="2"
       strokeDasharray="4 4"
       strokeLinecap="round"
     />
-    <path d="M42.5 39l-4 4m0-4l4 4" stroke="#D32F2F" strokeWidth="3" strokeLinecap="round" />
+    <path d="M42.5 39l-4 4m0-4l4 4" stroke="currentColor" className="text-red-700" strokeWidth="3" strokeLinecap="round" />
   </svg>
 )
 
@@ -151,32 +159,31 @@ const brixCatalog: BrixComponent[] = [
 const MAP_WIDTH = 20
 const MAP_HEIGHT = 20
 
+// Definitive Fix: New map layout based on user-provided "Treasure Map" image.
 const mapLayout = [
-  // 0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16   17   18   19  // X ->
-  "WWWWWWWWWWWWWWWWWWWW", // 0 Y
-  "WWWWWWFFFFFWWWWWWWWW", // 1
-  "WWWWFFBBBBBFFWWWWWWW", // 2
-  "WWWLFFBBBBBFFLWWWWWW", // 3
-  "WWLFFEEEEBLLXMMMMWWWW", // 4
-  "WLLLLFEEELLMMMMSSSWW", // 5
-  "WLLLLFEEELLLLLSSSSXW", // 6
-  "WLLLDDDFFLLLLLLLLSWW", // 7
-  "WWLLDDDFFFLLLLLLLLLW", // 8
-  "WWLLLDDDFFLLLLLLWWWW", // 9
-  "WWWLLLLLLLLLLLLWWWWW", // 10
-  "WWXLLLLLLLLLLLLLWWWW", // 11
-  "WWLLPPLLLLLLLLLLWWWW", // 12
-  "WIIIPPPLWWWWLLLGWWWW", // 13
-  "WIIIIIPPPLWWLLLGGWWW", // 14
-  "WWIIIILLLLLLLLGGGWWW", // 15
-  "WWWIILLLLWWLLGGGWWWW", // 16
-  "WWWWWWLLLWWLGGGWWWWW", // 17
-  "WWWWWWLLWWLLNNWWWWWW", // 18
-  "WWWWWHWWWWLNNNNXWWWW", // 19
-]
-  .join("")
-  .split("")
+    "WWWWWWWWWWWWWWWWWWWW",
+    "WWWWWWLLLLLWWWWWWWWW",
+    "WWWWLLLLLLLLLWWWWWWW",
+    "WWWLLLLLLLLLLLLLWWWW",
+    "WWLLLLLLLLMLLLLLLWWW",
+    "WLLLLLLLLLLLLLLLLLWW",
+    "WLLLLLLLLLLLLLLLLLLW",
+    "WWLLLLLLLLLLLLLLLLWW",
+    "WWLLLLFFLLLLMLLLLLWW",
+    "WWLLLLFFLLLLLLLLLLWW",
+    "WWWLLLLLLLLLLLLLLLWW",
+    "WWLLMLLLLLLLLLLLLWWW",
+    "WWLLLLLLLLLLLLLLLLWW",
+    "WWLLLLLLLLLLLLLLLLWW",
+    "WWWLLLLLLLLLLMLLLLWW",
+    "WWWWLLLLLLLLLLLLLLWW",
+    "WWWWWWLLLLLLLLLLWWWW",
+    "WWWWWWWWWWLLLLWWWWWW",
+    "WWWWWWWWWWLLLWWWWWWW",
+    "WWWWWWWWWHWWWWWWWWWW",
+].join("").split("");
 
+  
 const getQuestForLandmark = (char: string): Quest | null => {
   switch (char) {
     case "B": // Cursed Canopy
@@ -283,18 +290,23 @@ const Modal: React.FC<{ isOpen: boolean; onClose: () => void; children: React.Re
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-[#FBF6E9] rounded-2xl p-4 shadow-xl max-w-md w-full animate-fade-in border-8 border-double border-amber-800/70"
+        className="bg-card rounded-2xl p-4 shadow-xl max-w-md w-full animate-fade-in border-2 border-primary/10 relative"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-amber-900" style={{ fontFamily: "'IM Fell English SC', serif" }}>
+        { title === 'Treasure Map' && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+                <CompassRoseIcon className="w-48 h-48 text-primary" style={{'--bg-color': 'transparent'} as React.CSSProperties}/>
+            </div>
+        )}
+        <div className="flex justify-between items-center mb-4 relative z-10">
+          <h2 className="text-2xl font-bold text-primary">
             {title}
           </h2>
           <button onClick={onClose} className="font-bold text-2xl text-secondary">
             &times;
           </button>
         </div>
-        {children}
+        <div className="relative z-10">{children}</div>
       </div>
       <style>{`
             @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -305,7 +317,7 @@ const Modal: React.FC<{ isOpen: boolean; onClose: () => void; children: React.Re
 }
 
 const HangmanFigure = ({ wrongGuesses }: { wrongGuesses: number }) => (
-    <svg viewBox="0 0 100 120" className="w-32 h-40 mx-auto stroke-amber-900" strokeWidth="4" fill="none">
+    <svg viewBox="0 0 100 120" className="w-32 h-40 mx-auto stroke-primary" strokeWidth="4" fill="none">
         {/* Gallows */}
         <line x1="10" y1="110" x2="90" y2="110" />
         <line x1="30" y1="110" x2="30" y2="10" />
@@ -341,6 +353,10 @@ const getTerrainTile = (terrainChar: string) => {
       return <ShipwreckTile />
     case "D":
       return <DeadlySeaTile />
+    case "M":
+        return <MountainTile />
+    case "S":
+        return <SwampTile />
     // Landmark tiles
     case "B":
       return <ForestTile /> // Budgeting
@@ -354,10 +370,8 @@ const getTerrainTile = (terrainChar: string) => {
       return <LighthouseTile /> // Goals
     case "N":
       return <MountainTile /> // Inflation
-    case "M":
-      return <GrasslandTile /> // Means
-    case "S":
-      return <MountainTile /> // Saving (Waterfall)
+    // M is now a mountain
+    // S is now a swamp
     default:
       return <GrasslandTile />
   }
@@ -371,14 +385,14 @@ const getTerrainDescription = (char: string) => {
         case 'X': return 'Treasure Marker';
         case 'H': return 'Shipwreck';
         case 'D': return 'Deadly Sea';
+        case 'M': return 'Impassable Mountains';
+        case 'S': return 'Murky Swamp';
         case 'B': return 'Cursed Canopy';
         case 'E': return 'Emergency Grove';
         case 'I': return 'Valley of Myths';
         case 'P': return 'Lake of Lost Souls';
         case 'G': return 'Lighthouse Point';
         case 'N': return 'Inflationary Peaks';
-        case 'M': return 'The Means Meadows';
-        case 'S': return 'Savings Falls';
         default: return 'Land';
     }
 };
@@ -404,6 +418,7 @@ interface GameScreenProps {
   userName: string
   addNotification: (message: string, type: NotificationType) => void;
   isAppTutorialRunning: boolean;
+  appTutorialStepId: string | null;
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({
@@ -416,6 +431,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   userName,
   addNotification,
   isAppTutorialRunning,
+  appTutorialStepId,
 }) => {
   const [isShopOpen, setIsShopOpen] = useState(false)
   const [isInventoryOpen, setIsInventoryOpen] = useState(false)
@@ -434,6 +450,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
     x: number;
     y: number;
   } | null>(null);
+  const [clearingCost, setClearingCost] = useState<{x: number, y: number, cost: number, type: string} | null>(null);
 
   // Timer State
   const [timer, setTimer] = useState<number | null>(null);
@@ -452,16 +469,24 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [isHintLoading, setIsHintLoading] = useState(false);
   const HINT_COST = 25;
 
+  const [viewport, setViewport] = useState({ x: 5, y: 11 }); // Definitive Fix: Center on bottom of the map
+  const [showFullMapForTutorial, setShowFullMapForTutorial] = useState(false);
+  const VIEWPORT_SIZE = 9;
+
   const currentQuest = useMemo(() => gameState.quests.find((q) => !q.isCompleted), [gameState.quests])
+
+  useEffect(() => {
+    const shouldShow = isAppTutorialRunning && appTutorialStepId === 'full-map-view-step';
+    setShowFullMapForTutorial(shouldShow);
+  }, [isAppTutorialRunning, appTutorialStepId]);
 
   // Effect to manage the start of the game tutorial, ensuring it only begins
   // after the main app tutorial has concluded.
   useEffect(() => {
     if (!isAppTutorialRunning && !hasSeenTutorial) {
-      // Small delay to allow the app tour to fade out gracefully.
       const startTimeout = setTimeout(() => {
         setTutorialState({ isActive: true, step: 0 });
-      }, 500); // 0.5 second delay
+      }, 500); 
 
       return () => clearTimeout(startTimeout);
     }
@@ -472,18 +497,29 @@ const GameScreen: React.FC<GameScreenProps> = ({
   useEffect(() => {
     if (!tutorialState.isActive) return;
 
+    const currentStepConfig = tutorialConfig[tutorialState.step];
+    if (currentStepConfig.advancesBy !== 'action') return;
+
     switch (tutorialState.step) {
       case 1: // Expecting shop to open
-        if (isShopOpen) setTutorialState(prev => ({ ...prev, step: 2 }));
+        if (isShopOpen) handleTutorialNext();
+        break;
+      case 2: // Expecting item in inventory
+        if (gameState.inventory.some(i => i.brixId === 'shelter_1' && i.quantity > 0)) {
+            // This is handled inside handlePurchaseBrixWrapper to close the modal first
+        }
         break;
       case 3: // Expecting inventory to open
-        if (isInventoryOpen) setTutorialState(prev => ({ ...prev, step: 4 }));
+        if (isInventoryOpen) handleTutorialNext();
         break;
       case 4: // Expecting user to select an item to place
-        if (placingBrixId) setTutorialState(prev => ({ ...prev, step: 5 }));
+        if (placingBrixId) handleTutorialNext();
+        break;
+      case 5: // Expecting item to be placed
+        if (gameState.placedBrix.some(b => b.brixId === 'shelter_1')) handleTutorialNext();
         break;
     }
-  }, [isShopOpen, isInventoryOpen, placingBrixId, tutorialState.isActive, tutorialState.step]);
+  }, [isShopOpen, isInventoryOpen, placingBrixId, gameState.inventory, gameState.placedBrix, tutorialState.isActive, tutorialState.step]);
 
 
   const handleTutorialNext = () => {
@@ -721,30 +757,58 @@ const GameScreen: React.FC<GameScreenProps> = ({
         });
         addNotification("I've added a Driftwood Hut to yer cargo!", 'info');
         setIsShopOpen(false);
-        setTutorialState(prev => ({ ...prev, step: 3 })); // Advance to next step
+        handleTutorialNext();
     } else {
         onPurchaseBrix(brix);
     }
   };
+  
+    const handleClearTile = () => {
+        if (!clearingCost) return;
+        const { x, y, cost } = clearingCost;
 
+        if (brixCoins >= cost) {
+            onUpdateGameState(gs => ({
+                ...gs,
+                spentBrixCoins: gs.spentBrixCoins + cost,
+                clearedCells: [...(gs.clearedCells || []), { x, y }],
+            }));
+            addNotification(`Cleared the ${clearingCost.type} for ${cost} Doubloons!`, 'success');
+        } else {
+            addNotification(`Not enough Doubloons to clear the ${clearingCost.type}!`, 'error');
+        }
+        setClearingCost(null);
+    };
 
   const handleCellClick = (x: number, y: number) => {
-    if (placingBrixId) {
-      const mapIndex = y * MAP_WIDTH + x
-      const terrain = mapLayout[mapIndex]
-      const isLand = "LFMSEXHBDIPGN".includes(terrain)
-      const isOccupied = gameState.placedBrix.some((b) => b.x === x && b.y === y)
+    const mapIndex = y * MAP_WIDTH + x;
+    const terrain = mapLayout[mapIndex];
+    const isCleared = (gameState.clearedCells || []).some(c => c.x === x && c.y === y);
 
-      if (isLand && !isOccupied) {
-        onPlaceBrix(placingBrixId, x, y)
-        setPlacingBrixId(null)
-        setIsInventoryOpen(false)
+    if (placingBrixId) {
+      const isLand = terrain === "L";
+      const isOccupied = gameState.placedBrix.some((b) => b.x === x && b.y === y);
+
+      if ((isLand || isCleared) && !isOccupied) {
+        onPlaceBrix(placingBrixId, x, y);
+        setPlacingBrixId(null);
+        setIsInventoryOpen(false);
         if (tutorialState.isActive && tutorialState.step === 5) {
-            setTutorialState(prev => ({ ...prev, step: 6 }));
+            handleTutorialNext();
         }
       }
+    } else {
+        // Obstacle Clearing Logic
+        if (isCleared) return;
+        if (terrain === 'F') { // Forest
+            setClearingCost({ x, y, cost: 150, type: 'Forest' });
+        } else if (terrain === 'S') { // Swamp
+            setClearingCost({ x, y, cost: 250, type: 'Swamp' });
+        } else if (terrain === 'M' || terrain === 'D') {
+            addNotification("This terrain is impassable, Captain!", 'warning');
+        }
     }
-  }
+  };
 
   const inventoryWithData = useMemo(
     () =>
@@ -756,75 +820,81 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
   const completeQuest = useCallback(
     (quest: Quest) => {
-      stopTimer();
-      const QUEST_COOLDOWN = 3 * 60 * 1000;
-      const QUEST_COOLDOWN_THRESHOLD = 5;
-      const totalDoubloons = (quest.reward.doubloons || 0) + (quest.data.rewardCoins || 0);
+        stopTimer();
+        const QUEST_COOLDOWN = 3 * 60 * 1000;
+        const QUEST_COOLDOWN_THRESHOLD = 5;
+        const totalDoubloons = (quest.reward.doubloons || 0) + (quest.data.rewardCoins || 0);
 
-      onUpdateGameState(prevGameState => {
-          const updatedQuests = prevGameState.quests.map((q) => (q.id === quest.id ? { ...q, isCompleted: true } : q))
+        onUpdateGameState(prevGameState => {
+            const updatedQuests = prevGameState.quests.map(q => (q.id === quest.id ? { ...q, isCompleted: true } : q));
 
-          const oldRevealedSet = new Set(prevGameState.revealedCells.map((c) => `${c.x},${c.y}`))
-          const directRewardPieces = quest.reward.mapPieces.filter(p => !oldRevealedSet.has(`${p.x},${p.y}`));
+            const revealedSet = new Set(prevGameState.revealedCells.map(c => `${c.x},${c.y}`));
+            (quest.reward.mapPieces || []).forEach(p => revealedSet.add(`${p.x},${p.y}`));
+            
+            // --- Definitive Tile Reveal Logic ---
+            // 1. Find the "frontier": unrevealed land tiles adjacent to any revealed tile.
+            const frontier = new Set<string>();
+            const clearedSet = new Set((prevGameState.clearedCells || []).map(c => `${c.x},${c.y}`));
 
-          const frontier = new Set<string>();
-          const allCurrentlyRevealed = [...prevGameState.revealedCells, ...directRewardPieces];
+            prevGameState.revealedCells.forEach(cell => {
+                const neighbors = [
+                    { x: cell.x - 1, y: cell.y }, { x: cell.x + 1, y: cell.y },
+                    { x: cell.x, y: cell.y - 1 }, { x: cell.x, y: cell.y + 1 },
+                ];
+                neighbors.forEach(n => {
+                    if (n.x >= 0 && n.x < MAP_WIDTH && n.y >= 0 && n.y < MAP_HEIGHT) {
+                        const key = `${n.x},${n.y}`;
+                        if (!revealedSet.has(key)) { // Is it unrevealed?
+                            const mapIndex = n.y * MAP_WIDTH + n.x;
+                            const terrain = mapLayout[mapIndex];
+                            const isLand = "LFMSEXHBDIPGN".includes(terrain);
+                            if (isLand) { // Is it land?
+                                frontier.add(key);
+                            }
+                        }
+                    }
+                });
+            });
 
-          allCurrentlyRevealed.forEach(cell => {
-              const neighbors = [{x: cell.x - 1, y: cell.y}, {x: cell.x + 1, y: cell.y}, {x: cell.x, y: cell.y - 1}, {x: cell.x, y: cell.y + 1}];
-              neighbors.forEach(n => {
-                  if (n.x >= 0 && n.x < MAP_WIDTH && n.y >= 0 && n.y < MAP_HEIGHT) {
-                      const mapIndex = n.y * MAP_WIDTH + n.x;
-                      const terrain = mapLayout[mapIndex];
-                      const isLand = "LFMSEXHBDIPGN".includes(terrain);
-                      if (isLand && !oldRevealedSet.has(`${n.x},${n.y}`) && !directRewardPieces.some(p => p.x === n.x && p.y === n.y)) {
-                          frontier.add(`${n.x},${n.y}`);
-                      }
-                  }
-              });
-          });
-          
-          const bonusReveals = Array.from(frontier).sort(() => 0.5 - Math.random()).slice(0, 2).map(s => {
-              const [x, y] = s.split(',').map(Number);
-              return { x, y };
-          });
-          
-          const expandedRevealedCoords = [...directRewardPieces, ...bonusReveals];
+            // 2. Randomly select 2 tiles from the frontier to reveal.
+            const bonusRevealCount = 2;
+            const bonusReveals = Array.from(frontier).sort(() => 0.5 - Math.random()).slice(0, bonusRevealCount);
+            bonusReveals.forEach(key => revealedSet.add(key));
 
-          const combinedRevealed = [...prevGameState.revealedCells, ...expandedRevealedCoords]
-          const uniqueRevealed = Array.from(new Set(combinedRevealed.map((c) => `${c.x},${c.y}`))).map((s) => {
-            const [x, y] = s.split(",").map(Number)
-            return { x, y }
-          });
-          
-          setQuestFeedback(`Quest complete! +${totalDoubloons} Doubloons. ${expandedRevealedCoords.length} new areas revealed!`);
-          
-          setTimeout(() => {
-            setIsQuestOpen(false)
-            setQuestFeedback(null)
-          }, 3000);
+            const finalRevealed = Array.from(revealedSet).map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
 
-          const questsCompleted = (prevGameState.questsCompletedSinceCooldown || 0) + 1;
-          let newCooldownUntil = prevGameState.questCooldownUntil;
+            const totalRevealedCount = (quest.reward.mapPieces?.length || 0) + bonusReveals.length;
+            setQuestFeedback(`Quest complete! +${totalDoubloons} Doubloons. ${totalRevealedCount > 0 ? `${totalRevealedCount} new areas revealed!` : ''}`);
+            
+            setTimeout(() => {
+                setIsQuestOpen(false);
+                setQuestFeedback(null);
+            }, 3000);
 
-          if (questsCompleted >= QUEST_COOLDOWN_THRESHOLD) {
-              newCooldownUntil = Date.now() + QUEST_COOLDOWN;
-          }
+            const questsCompleted = (prevGameState.questsCompletedSinceCooldown || 0) + 1;
+            let newCooldownUntil = prevGameState.questCooldownUntil;
+            if (questsCompleted >= QUEST_COOLDOWN_THRESHOLD) {
+                newCooldownUntil = Date.now() + QUEST_COOLDOWN;
+            }
 
-          return { 
-              ...prevGameState, 
-              quests: updatedQuests, 
-              revealedCells: uniqueRevealed,
-              spentBrixCoins: prevGameState.spentBrixCoins - totalDoubloons,
-              specialItems: [...(prevGameState.specialItems || []), ...(quest.reward.items || [])],
-              activeMinigameState: null,
-              questCooldownUntil: newCooldownUntil,
-              questsCompletedSinceCooldown: questsCompleted >= QUEST_COOLDOWN_THRESHOLD ? 0 : questsCompleted,
-          };
-      });
+            return {
+                ...prevGameState,
+                quests: updatedQuests,
+                revealedCells: finalRevealed,
+                spentBrixCoins: prevGameState.spentBrixCoins - totalDoubloons,
+                specialItems: [...(prevGameState.specialItems || []), ...(quest.reward.items || [])],
+                activeMinigameState: null,
+                questCooldownUntil: newCooldownUntil,
+                questsCompletedSinceCooldown: questsCompleted >= QUEST_COOLDOWN_THRESHOLD ? 0 : questsCompleted,
+            };
+        });
     },
-    [onUpdateGameState, stopTimer],
-  )
+    [onUpdateGameState, stopTimer]
+);
+
   
   const handleGetHint = async () => {
       if (!currentQuest || !gameState.activeMinigameState || gameState.activeMinigameState.type !== 'hangman' || brixCoins < HINT_COST) return;
@@ -966,14 +1036,74 @@ const GameScreen: React.FC<GameScreenProps> = ({
     setTooltip(null);
   };
 
+  const renderMap = (isFullMap: boolean) => {
+    const size = isFullMap ? MAP_WIDTH : VIEWPORT_SIZE;
+    const startX = isFullMap ? 0 : viewport.x;
+    const startY = isFullMap ? 0 : viewport.y;
+    
+    const cells = [];
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            const mapX = startX + x;
+            const mapY = startY + y;
+
+            if (mapX < 0 || mapX >= MAP_WIDTH || mapY < 0 || mapY >= MAP_HEIGHT) {
+                cells.push(<div key={`${x}-${y}`} className="bg-gray-800" />);
+                continue;
+            }
+
+            const mapIndex = mapY * MAP_WIDTH + mapX;
+            let terrain = mapLayout[mapIndex];
+            const isCleared = (gameState.clearedCells || []).some(c => c.x === mapX && c.y === mapY);
+            if (isCleared) {
+                terrain = 'L'; // Render as grassland if cleared
+            }
+
+            const isRevealed = gameState.revealedCells.some((cell) => cell.x === mapX && cell.y === mapY);
+            const placed = gameState.placedBrix.find((b) => b.x === mapX && b.y === mapY);
+            const brixData = placed ? brixCatalog.find((b) => b.id === placed.brixId) : null;
+            
+            const canPlace = isRevealed && (terrain === 'L' || isCleared) && !placed && placingBrixId;
+            const isClearable = isRevealed && !isCleared && (terrain === 'F' || terrain === 'S');
+            const isSelectedForClearing = clearingCost && clearingCost.x === mapX && clearingCost.y === mapY;
+            const isOcean = terrain === "W" || terrain === "D";
+
+            const isTutorialCell = mapX === 10 && mapY === 18;
+            const cellId = isTutorialCell && !isFullMap ? 'tutorial-place-cell' : undefined;
+
+            cells.push(
+                <div
+                    key={`${x}-${y}`}
+                    id={cellId}
+                    onClick={() => handleCellClick(mapX, mapY)}
+                    onMouseEnter={(e) => handleMouseEnterCell(e, mapX, mapY)}
+                    onMouseLeave={handleMouseLeaveCell}
+                    className={`w-full h-full relative transition-all aspect-square ${canPlace || isClearable ? "cursor-pointer" : ""} ${canPlace ? "ring-2 ring-accent ring-inset z-10" : ""} ${isSelectedForClearing ? "ring-4 ring-red-500 ring-inset z-10" : ""}`}
+                >
+                    {getTerrainTile(terrain)}
+                    {brixData && <div className="absolute inset-0 flex items-center justify-center text-2xl md:text-4xl pointer-events-none drop-shadow-lg">{brixData.asset}</div>}
+                    {!isRevealed && !isOcean && <FogTile />}
+                    {canPlace && <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-accent/20"><div className="w-4 h-4 bg-accent/50 rounded-full animate-pulse"></div></div>}
+                </div>
+            );
+        }
+    }
+    return (
+        <div
+            id={isFullMap && showFullMapForTutorial ? 'full-map-view-step' : undefined}
+            role="grid"
+            aria-label="Captain's Island Map"
+            className="grid gap-0 bg-background rounded-lg shadow-inner w-full border-4 border-primary/20 overflow-hidden aspect-square"
+            style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
+        >
+            {cells}
+        </div>
+    );
+};
+
 
   return (
-    <div
-      className="p-4 pt-6 h-full flex flex-col bg-[#FBF6E9]"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-      }}
-    >
+    <div className="p-4 flex flex-col h-full bg-background">
       {/* --- MODALS & TUTORIAL --- */}
       {tutorialState.isActive && (
         <TutorialHighlight
@@ -988,16 +1118,25 @@ const GameScreen: React.FC<GameScreenProps> = ({
             advancesBy={tutorialConfig[tutorialState.step].advancesBy}
         />
       )}
-
+      {clearingCost && (
+          <Modal isOpen={!!clearingCost} onClose={() => setClearingCost(null)} title={`Clear the ${clearingCost.type}`}>
+              <div className="text-center">
+                  <p className="text-secondary mb-4">It'll cost ye <span className="font-bold text-primary">{clearingCost.cost}</span> Doubloons to clear this tile. Proceed?</p>
+                  <div className="flex justify-center gap-4">
+                      <button onClick={() => setClearingCost(null)} className="font-bold py-2 px-6 rounded-lg hover:bg-gray-100 text-secondary">Nay</button>
+                      <button onClick={handleClearTile} className="bg-accent text-white font-bold py-2 px-8 rounded-lg shadow-lg hover:bg-accent-dark">Aye!</button>
+                  </div>
+              </div>
+          </Modal>
+      )}
       {tooltip && tooltip.visible && (
         <div
-          className="fixed bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg z-[60] pointer-events-none transition-opacity duration-200"
+          className="fixed bg-card/90 backdrop-blur-sm p-3 rounded-lg shadow-lg z-[60] pointer-events-none transition-opacity duration-200"
           style={{ top: tooltip.y + 10, left: tooltip.x + 10, maxWidth: '200px' }}
         >
           {tooltip.content}
         </div>
       )}
-      
       <Modal isOpen={isShopOpen} onClose={() => setIsShopOpen(false)} title="Brix & Pieces Shop">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1">
           {brixCatalog.map((brix) => (
@@ -1005,27 +1144,26 @@ const GameScreen: React.FC<GameScreenProps> = ({
               key={brix.id}
               id={brix.id === 'shelter_1' ? 'tutorial-shop-item' : undefined}
               onClick={() => handlePurchaseBrixWrapper(brix)}
-              className="bg-amber-100 p-3 rounded-xl text-center cursor-pointer hover:ring-2 ring-amber-500"
+              className="bg-background p-3 rounded-xl text-center cursor-pointer shadow-soft-inset hover:ring-2 ring-accent"
             >
               <p className="text-4xl">{brix.asset}</p>
               <p className="font-semibold text-sm mt-1">{brix.name}</p>
-              <p className="text-xs text-amber-800 flex items-center justify-center gap-1">
+              <p className="text-xs text-secondary flex items-center justify-center gap-1">
                 {brix.cost.toLocaleString()} <DoubloonIcon />
               </p>
             </div>
           ))}
         </div>
       </Modal>
-
       <Modal isOpen={isInventoryOpen} onClose={() => setIsInventoryOpen(false)} title="Captain's Cargo">
         {inventoryWithData.length === 0 && (gameState.specialItems || []).length === 0 ? (
           <div className="text-center">
             <p className="text-secondary mb-4">Yer cargo hold is empty, Captain!</p>
-            <p className="text-sm text-muted-foreground">Visit the shop to buy components for yer island!</p>
+            <p className="text-sm text-secondary">Visit the shop to buy components for yer island!</p>
           </div>
         ) : (
           <div>
-            <p className="text-sm text-muted-foreground mb-4 text-center">
+            <p className="text-sm text-secondary mb-4 text-center">
               {placingBrixId
                 ? "Click on cleared land to place yer component!"
                 : "Select a component to place on yer island:"}
@@ -1039,17 +1177,17 @@ const GameScreen: React.FC<GameScreenProps> = ({
                     setPlacingBrixId(item.id!)
                     setIsInventoryOpen(false)
                   }}
-                  className="bg-amber-100 p-3 rounded-xl text-center cursor-pointer hover:ring-2 ring-amber-500 transition-all"
+                  className="bg-background p-3 rounded-xl text-center cursor-pointer shadow-soft-inset hover:ring-2 ring-accent transition-all"
                 >
                   <p className="text-4xl">{item.asset}</p>
                   <p className="font-semibold text-sm mt-1">{item.name}</p>
                   <p className="text-xs text-secondary">Qty: {item.quantity}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.financialTip}</p>
+                  <p className="text-xs text-secondary mt-1 italic">"{item.financialTip}"</p>
                 </div>
               ))}
             </div>
              {gameState.specialItems && gameState.specialItems.length > 0 && (
-                <div className="mt-4 pt-4 border-t-2 border-amber-200">
+                <div className="mt-4 pt-4 border-t-2 border-background">
                     <h3 className="font-bold text-center text-primary">Special Items</h3>
                     <div className="flex justify-center gap-4 mt-2">
                         {gameState.specialItems.map((item, i) => (
@@ -1064,13 +1202,12 @@ const GameScreen: React.FC<GameScreenProps> = ({
           </div>
         )}
       </Modal>
-
       <Modal isOpen={isQuestOpen} onClose={() => setIsQuestOpen(false)} title={currentQuest?.title || "Quest"}>
         {currentQuest && (
           <div>
             {timer !== null && timerPhase && (
-                <div className="text-center my-2 p-2 bg-amber-200/70 rounded-lg border border-amber-300">
-                    <p className="font-bold text-xs uppercase text-amber-800">
+                <div className="text-center my-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
+                    <p className="font-bold text-xs uppercase text-accent-dark">
                         {timerPhase === 'reading' ? 'Time to Ponder' : 'Time to Answer!'}
                     </p>
                     <p className="text-3xl font-bold text-primary">{timer}</p>
@@ -1078,19 +1215,17 @@ const GameScreen: React.FC<GameScreenProps> = ({
             )}
             <p className="text-secondary mb-4 italic text-center">"{currentQuest.description}"</p>
             {questFeedback && ( <p className="my-4 text-center font-semibold text-accent-dark animate-fade-in">{questFeedback}</p> )}
-
             <div className={`${timerPhase === 'reading' ? 'opacity-50 pointer-events-none' : ''}`}>
               {currentQuest.type === 'riddle' && currentQuest.data.question && (
                 <div className="space-y-2">
                   <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.question}"</p>
                   {(currentQuest.data.options || []).map((option, index) => (
-                    <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-center hover:bg-amber-200">
+                    <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-background text-primary font-semibold p-3 rounded-lg text-center hover:bg-background/80">
                       {option}
                     </button>
                   ))}
                 </div>
               )}
-
               {currentQuest.type === 'decision' && currentQuest.data.scenario && (
                   <div className="space-y-2">
                       <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.scenario}"</p>
@@ -1098,43 +1233,39 @@ const GameScreen: React.FC<GameScreenProps> = ({
                           <button
                               key={index}
                               onClick={() => handleQuestChoice(choice)}
-                              className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-left hover:bg-amber-200"
+                              className="w-full bg-background text-primary font-semibold p-3 rounded-lg text-left hover:bg-background/80"
                           >
                               {choice.text}
                           </button>
                       ))}
                   </div>
               )}
-              
               {currentQuest.type === 'riddle_challenge' && gameState.activeMinigameState && (
                   <div className="space-y-2">
                       <p className="text-sm text-center font-bold">Riddle {gameState.activeMinigameState.progress + 1} of {currentQuest.data.riddles!.length}</p>
                       <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.riddles![gameState.activeMinigameState.progress].question}"</p>
                       {(currentQuest.data.riddles![gameState.activeMinigameState.progress].options || []).map((option, index) => (
-                          <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-amber-100 text-primary font-semibold p-3 rounded-lg text-center hover:bg-amber-200">
+                          <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-background text-primary font-semibold p-3 rounded-lg text-center hover:bg-background/80">
                               {option}
                           </button>
                       ))}
                   </div>
               )}
-
               {currentQuest.type === 'hangman' && gameState.activeMinigameState?.hangman && (
                   <div className="text-center">
                       <HangmanFigure wrongGuesses={gameState.activeMinigameState.hangman.wrongGuesses} />
-                      <p className="text-sm text-center font-bold text-amber-800 my-2">Word {gameState.activeMinigameState.progress + 1} of {currentQuest.data.words!.length}</p>
-                       <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center text-primary" style={{ fontFamily: "'IM Fell English SC', serif" }}>
+                      <p className="text-sm text-center font-bold text-primary my-2">Word {gameState.activeMinigameState.progress + 1} of {currentQuest.data.words!.length}</p>
+                       <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center text-primary">
                           {currentQuest.data.words![gameState.activeMinigameState.progress].split('').map((char, i) => (
-                              <span key={i} className="inline-block w-8 border-b-4 border-amber-800">{gameState.activeMinigameState!.hangman!.guessedLetters.includes(char) ? char : '\u00A0'}</span>
+                              <span key={i} className="inline-block w-8 border-b-4 border-primary/50">{gameState.activeMinigameState!.hangman!.guessedLetters.includes(char) ? char : '\u00A0'}</span>
                           ))}
                       </div>
-                      
                       <div className="min-h-[4rem] flex items-center justify-center flex-col">
-                        {hint && <p className="text-sm text-secondary italic mb-2 p-2 bg-amber-100 rounded-md">Hint: "{hint}"</p>}
-                        
+                        {hint && <p className="text-sm text-secondary italic mb-2 p-2 bg-background rounded-md">Hint: "{hint}"</p>}
                         <button 
                             onClick={handleGetHint} 
                             disabled={isHintLoading || gameState.activeMinigameState.hangman.hintUsed || brixCoins < HINT_COST} 
-                            className="text-sm bg-amber-200 text-amber-900 font-bold py-2 px-4 rounded-full mb-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group"
+                            className="text-sm bg-accent/20 text-accent-dark font-bold py-2 px-4 rounded-full mb-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group"
                         >
                           💡 
                           {isHintLoading 
@@ -1144,11 +1275,10 @@ const GameScreen: React.FC<GameScreenProps> = ({
                             : `Get Hint (-${HINT_COST})`}
                         </button>
                       </div>
-
                       <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mt-2">
                           {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
                               <button key={letter} onClick={() => handleHangmanGuess(letter)} disabled={gameState.activeMinigameState!.hangman!.guessedLetters.includes(letter)}
-                                  className="w-8 h-8 font-bold bg-amber-100 rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-amber-200 transition-colors">
+                                  className="w-8 h-8 font-bold bg-background rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-background/80 transition-colors">
                                   {letter}
                               </button>
                           ))}
@@ -1159,24 +1289,23 @@ const GameScreen: React.FC<GameScreenProps> = ({
           </div>
         )}
       </Modal>
-
        <Modal isOpen={isQuestLogOpen} onClose={() => setIsQuestLogOpen(false)} title="Captain's Log">
         <div className="max-h-[60vh] overflow-y-auto p-2 space-y-4">
             <div>
-                <h3 className="font-bold text-amber-900 text-lg mb-2 sticky top-0 bg-[#FBF6E9] py-1">Active Quests</h3>
+                <h3 className="font-bold text-primary text-lg mb-2 sticky top-0 bg-card py-1">Active Quests</h3>
                 {gameState.quests.filter(q => !q.isCompleted).length > 0 ? (
                     gameState.quests.filter(q => !q.isCompleted).map(q => (
-                        <div key={q.id} className="mb-2 p-3 bg-amber-100 rounded-lg shadow-sm">
+                        <div key={q.id} className="mb-2 p-3 bg-background rounded-lg shadow-sm">
                             <p className="font-bold text-primary">{q.title}</p>
                             <p className="text-sm text-secondary italic">"{q.description}"</p>
                         </div>
                     ))
                 ) : (
-                    <p className="text-sm text-secondary p-3 bg-amber-50 rounded-lg">No active quests. Time to find a new adventure!</p>
+                    <p className="text-sm text-secondary p-3 bg-background rounded-lg">No active quests. Time to find a new adventure!</p>
                 )}
             </div>
             <div>
-                <h3 className="font-bold text-amber-900 text-lg mb-2 sticky top-0 bg-[#FBF6E9] py-1">Completed Quests</h3>
+                <h3 className="font-bold text-primary text-lg mb-2 sticky top-0 bg-card py-1">Completed Quests</h3>
                 {gameState.quests.filter(q => q.isCompleted).length > 0 ? (
                     gameState.quests.filter(q => q.isCompleted).map(q => (
                         <div key={q.id} className="mb-2 p-3 bg-green-100/70 rounded-lg opacity-80">
@@ -1184,186 +1313,104 @@ const GameScreen: React.FC<GameScreenProps> = ({
                         </div>
                     ))
                 ) : (
-                     <p className="text-sm text-secondary p-3 bg-amber-50 rounded-lg">No quests completed yet.</p>
+                     <p className="text-sm text-secondary p-3 bg-background rounded-lg">No quests completed yet.</p>
                 )}
             </div>
         </div>
       </Modal>
-
       <Modal isOpen={isWorldMapOpen} onClose={() => setIsWorldMapOpen(false)} title="Treasure Map">
-        <div className="bg-amber-100 p-1 rounded-lg shadow-inner border-2 border-amber-800/50">
-          <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${MAP_WIDTH}, minmax(0, 1fr))` }}>
-            {mapLayout.map((terrain, i) => {
-              const x = i % MAP_WIDTH
-              const y = Math.floor(i / MAP_WIDTH)
-              const isRevealed = gameState.revealedCells.some((cell) => cell.x === x && cell.y === y)
-              const isOcean = terrain === "W" || terrain === "D"
-              return (
-                <div key={i} className={`w-full aspect-square transition-opacity duration-500 relative`}>
-                  {getTerrainTile(terrain)}
-                  {!isRevealed && !isOcean && <FogTile />}
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        {renderMap(true)}
       </Modal>
+      
+      {/* --- UI PANEL --- */}
+      <div className="flex-shrink-0">
+         <header id="pirates-legacy-header" className="flex justify-between items-center mb-4 z-10 relative">
+            <div className="flex-1">
+            <h1 className="text-3xl font-bold text-primary">
+                Pirate's Legacy
+            </h1>
+            </div>
+            <div className="flex items-center gap-2">
+                <button onClick={() => onUpdateGameState(gs => ({ ...gs, isVoiceOverEnabled: !gs.isVoiceOverEnabled }))} className="p-2 rounded-full bg-card shadow-card hover:bg-white-soft text-primary">
+                    <SpeakerIcon enabled={gameState.isVoiceOverEnabled ?? true} />
+                </button>
+                <button onClick={() => setIsWorldMapOpen(true)} className="p-2 rounded-full bg-card shadow-card hover:bg-white-soft">
+                    <TreasureMapIcon className="w-8 h-8 text-primary" />
+                </button>
+            </div>
+        </header>
+        <p className="text-secondary -mt-4 mb-4">Captain {userName}'s Treasure Island</p>
 
-      {/* --- HEADER & ACTIONS --- */}
-      <header id="pirates-legacy-header" className="flex justify-between items-center mb-4">
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-amber-900" style={{ fontFamily: "'IM Fell English SC', serif" }}>
-            Pirate's Legacy
-          </h1>
+        <div className="bg-card p-2 rounded-2xl shadow-card mb-4">
+            <div className="flex justify-between items-center">
+            <div id="tutorial-doubloons" className="font-bold text-xl text-primary flex items-center gap-2 pl-2">
+                <DoubloonIcon />
+                <span>{brixCoins.toLocaleString()}</span>
+            </div>
+            <div className="flex gap-2">
+                <button
+                onClick={() => setIsQuestLogOpen(true)}
+                className="bg-secondary/20 text-secondary-dark font-bold py-3 px-4 rounded-xl flex items-center gap-2 hover:bg-secondary/30"
+                >
+                📜 Log
+                </button>
+                <button
+                id="tutorial-cargo-button"
+                onClick={() => setIsInventoryOpen(true)}
+                className="bg-secondary/20 text-secondary-dark font-bold py-3 px-4 rounded-xl flex items-center gap-2 hover:bg-secondary/30"
+                >
+                <CargoIcon /> Cargo
+                </button>
+                <button
+                id="tutorial-shop-button"
+                onClick={() => setIsShopOpen(true)}
+                className="bg-accent text-white font-bold py-3 px-4 rounded-xl flex items-center gap-2 hover:bg-accent-dark"
+                >
+                <ShopIcon /> Shop
+                </button>
+            </div>
+            </div>
         </div>
-        <div className="flex items-center gap-2">
-            <button onClick={() => onUpdateGameState(gs => ({ ...gs, isVoiceOverEnabled: !gs.isVoiceOverEnabled }))} className="p-2 rounded-full bg-card shadow-sm hover:bg-amber-100 text-primary">
-                <SpeakerIcon enabled={gameState.isVoiceOverEnabled ?? true} />
-            </button>
-            <button onClick={() => setIsWorldMapOpen(true)} className="p-2 rounded-full bg-card shadow-sm hover:bg-amber-100">
-                <TreasureMapIcon className="w-8 h-8" />
-            </button>
-        </div>
-      </header>
-      <p className="text-secondary -mt-4 mb-4">Captain {userName}'s Treasure Island</p>
-
-      <div className="bg-white/80 backdrop-blur-sm p-2 rounded-2xl shadow-card mb-4">
-        <div className="flex justify-between items-center">
-          <div id="tutorial-doubloons" className="font-bold text-xl text-amber-900 flex items-center gap-2 pl-2">
-            <DoubloonIcon />
-            <span>{brixCoins.toLocaleString()}</span>
-          </div>
-          <div className="flex gap-2">
+        
+        {!currentQuest ? (
+            <div className="mb-4">
             <button
-              onClick={() => setIsQuestLogOpen(true)}
-              className="bg-amber-800 text-white font-bold py-3 px-4 rounded-xl flex items-center gap-2"
+                id="tutorial-quest-button"
+                onClick={generateNextAIGeneratedQuest}
+                disabled={isGeneratingQuest || !!cooldownTime || (dailyQuestData?.count ?? 0) >= DAILY_QUEST_LIMIT}
+                className="w-full bg-accent text-white font-bold py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-accent-dark disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
             >
-              📜 Log
+                {isGeneratingQuest
+                ? 'Seeking adventure...'
+                : cooldownTime
+                ? `Next quest in ${cooldownTime}`
+                : (dailyQuestData?.count ?? 0) >= DAILY_QUEST_LIMIT ? `Daily quest limit reached (${DAILY_QUEST_LIMIT}/${DAILY_QUEST_LIMIT})`
+                : '📜 Find a Quest'}
             </button>
-            <button
-              id="tutorial-cargo-button"
-              onClick={() => setIsInventoryOpen(true)}
-              className="bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-xl flex items-center gap-2"
+            </div>
+        ) : (
+            <div
+            onClick={() => handleOpenQuest(currentQuest)}
+            className={`bg-accent/10 border-2 border-accent/20 p-3 rounded-xl text-center mb-4 cursor-pointer hover:bg-accent/20`}
             >
-              <CargoIcon /> Cargo
-            </button>
-            <button
-              id="tutorial-shop-button"
-              onClick={() => setIsShopOpen(true)}
-              className="bg-amber-400 text-amber-900 font-bold py-3 px-4 rounded-xl flex items-center gap-2"
-            >
-              <ShopIcon /> Shop
-            </button>
-          </div>
-        </div>
-      </div>
-       
-      {!currentQuest ? (
-        <div className="mb-4">
-          <button
-            id="tutorial-quest-button"
-            onClick={generateNextAIGeneratedQuest}
-            disabled={isGeneratingQuest || !!cooldownTime || (dailyQuestData?.count ?? 0) >= DAILY_QUEST_LIMIT}
-            className="w-full bg-teal-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
-          >
-            {isGeneratingQuest
-              ? 'Seeking adventure...'
-              : cooldownTime
-              ? `Next quest in ${cooldownTime}`
-              : (dailyQuestData?.count ?? 0) >= DAILY_QUEST_LIMIT ? `Daily quest limit reached (${DAILY_QUEST_LIMIT}/${DAILY_QUEST_LIMIT})`
-              : '📜 Find a Quest'}
-          </button>
-        </div>
-      ) : (
-        <div
-          onClick={() => handleOpenQuest(currentQuest)}
-          className={`bg-amber-100 border-2 border-amber-200 p-3 rounded-xl text-center mb-4 cursor-pointer hover:bg-amber-200`}
-        >
-          <p className="font-bold text-sm text-amber-900">
-             New Quest Available: <span className="underline">{currentQuest.title}</span>
-          </p>
-        </div>
-      )}
-
-
-      {/* --- GAME MAP QUADRANT --- */}
-      <div className="flex-grow flex items-center justify-center relative">
-        <div 
-          role="grid"
-          aria-label="Captain's Island Map Quadrant"
-          className="grid grid-cols-10 gap-0 bg-amber-200 rounded-lg shadow-inner aspect-square max-w-full max-h-full border-4 border-amber-800/80 overflow-hidden"
-        >
-          {Array.from({ length: 10 * 10 }).map((_, i) => {
-            const viewX = i % 10
-            const viewY = Math.floor(i / 10)
-            const mapX = viewX
-            const mapY = viewY + 10
-
-            const mapIndex = mapY * MAP_WIDTH + mapX
-            const terrain = mapLayout[mapIndex]
-            const isRevealed = gameState.revealedCells.some((cell) => cell.x === mapX && cell.y === mapY)
-            const placed = gameState.placedBrix.find((b) => b.x === mapX && b.y === mapY)
-            const brixData = placed ? brixCatalog.find((b) => b.id === placed.brixId) : null
-            const isLand = "LFMSEXHBDIPGN".includes(terrain)
-            const isOcean = terrain === "W" || terrain === "D"
-            const canPlace = isRevealed && isLand && !placed && placingBrixId
-
-            const terrainDescription = getTerrainDescription(terrain);
-            const revealedStatus = isRevealed ? 'Revealed' : 'Foggy';
-            const contentStatus = brixData ? `, contains ${brixData.name}` : '';
-            const cellDescription = `Cell at column ${mapX + 1}, row ${mapY + 1}. Type: ${terrainDescription}, Status: ${revealedStatus}${contentStatus}`;
-            
-            // Assign a specific ID for the tutorial to highlight
-            const isTutorialCell = mapX === 6 && mapY === 18;
-            const cellId = isTutorialCell ? 'tutorial-place-cell' : undefined;
-
-
-            return (
-              <div
-                key={i}
-                id={cellId}
-                role="gridcell"
-                aria-label={cellDescription}
-                onClick={() => handleCellClick(mapX, mapY)}
-                onMouseEnter={(e) => handleMouseEnterCell(e, mapX, mapY)}
-                onMouseLeave={handleMouseLeaveCell}
-                className={`w-full h-full relative transition-all ${
-                  canPlace
-                    ? "cursor-pointer hover:ring-2 ring-green-400 hover:bg-green-200/30 z-10"
-                    : placingBrixId && isRevealed && isLand && placed
-                      ? "ring-1 ring-red-400"
-                      : ""
-                }`}
-              >
-                {getTerrainTile(terrain)}
-                {brixData && (
-                  <div className="absolute inset-0 flex items-center justify-center text-4xl pointer-events-none drop-shadow-lg">
-                    {brixData.asset}
-                  </div>
-                )}
-                {!isRevealed && !isOcean && <FogTile />}
-                {canPlace && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-6 h-6 bg-green-400/50 rounded-full animate-pulse"></div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {placingBrixId && (
-          <div className="absolute top-2 left-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold animate-pulse">
-            Placing Mode: Click on cleared land!
-          </div>
+            <p className="font-bold text-sm text-accent-dark">
+                New Quest Available: <span className="underline">{currentQuest.title}</span>
+            </p>
+            </div>
         )}
-
-        <button
-          onClick={() => onNavigateToChat("game")}
-          className="absolute bottom-2 right-2 bg-primary text-white rounded-full p-3 shadow-lg transform hover:scale-110 transition-transform"
-          aria-label="Ask the Genie"
-        >
-          <span className="text-2xl">🧞‍♂️</span>
+      </div>
+      
+      {/* --- GAME MAP AREA --- */}
+      <div className="flex-grow flex items-center justify-center relative min-h-0">
+        <div className="w-full h-full max-w-full max-h-full">
+          {renderMap(showFullMapForTutorial)}
+        </div>
+         <button
+            onClick={() => onNavigateToChat("game")}
+            className="absolute bottom-2 right-2 bg-primary text-white rounded-full p-3 shadow-lg transform hover:scale-110 transition-transform"
+            aria-label="Ask the Genie"
+            >
+            <span className="text-2xl">🧞‍♂️</span>
         </button>
       </div>
     </div>

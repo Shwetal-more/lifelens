@@ -30,9 +30,20 @@
       }
     </script>
     <style>
+      html, body, #root {
+        height: 100%;
+        overscroll-behavior: none;
+      }
       html {
         -webkit-text-size-adjust: 100%;
         text-size-adjust: 100%;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome, Safari and Opera */
       }
     </style>
   <script type="importmap">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Screen } from '../types';
 
@@ -7,75 +6,99 @@ interface BottomNavProps {
   onNavigate: (screen: Screen) => void;
 }
 
+// Reusable Icon components
 const HomeIcon = ({ className }: { className?: string }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h7.5" />
   </svg>
 );
 
-const CompassIcon = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 8.09 9.91 9.91l-1.82-6 6 1.82 1.82 6Z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-  </svg>
+const CompassRoseIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <polygon points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9" />
+        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+    </svg>
 );
 
 const GoalsIcon = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h.375m16.5 0h.375a1.125 1.125 0 0 1 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m0 0V6.375m0 12.375-1.5-1.5m1.5 1.5-1.5-1.5m0 0H3.75m16.5 0-1.5 1.5m-15-1.5L5.25 18l-1.5-1.5m15 0-1.5 1.5m1.5-1.5L18.75 18l1.5-1.5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
   </svg>
 );
 
+const ProfileIcon = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+  </svg>
+);
 
 const IslandIcon = ({ className }: { className?: string }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13.125 6.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm0 0v.004M8.25 9.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM8.25 9.75v.004M15.75 9.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM15.75 9.75v.004m-7.5 3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3-3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m-3-3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m-3 3a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m12 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004M5.25 16.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m3 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m.75-12a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004M3.75 12a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004m16.5 0a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004M12 19.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v.004" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+        {/* Globe Outline */}
+        <circle cx="12" cy="12" r="10" />
+        
+        {/* Landmass dots */}
+        <g fill="currentColor">
+            <circle cx="10" cy="8.5" r="0.75" />
+            <circle cx="12" cy="8" r="0.75" />
+            <circle cx="14" cy="9" r="0.75" />
+            
+            <circle cx="8.5" cy="11" r="0.75" />
+            <circle cx="10.5" cy="11.5" r="0.75" />
+            <circle cx="12.5" cy="12" r="0.75" />
+            <circle cx="15" cy="11" r="0.75" />
+            
+            <circle cx="9.5" cy="14" r="0.75" />
+            <circle cx="11.5" cy="15" r="0.75" />
+            <circle cx="13.5" cy="14.5" r="0.75" />
+        </g>
     </svg>
 );
 
 
-const ProfileIcon = ({ className }: { className?: string }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-  </svg>
-);
-
 const NavItem: React.FC<{
   screen: Screen;
+  label: string;
+  icon: React.ReactNode;
   activeScreen: Screen;
   onNavigate: (screen: Screen) => void;
-  Icon: React.ElementType;
-  label: string;
-}> = ({ screen, activeScreen, onNavigate, Icon, label }) => {
+  tutorialId?: string;
+}> = ({ screen, label, icon, activeScreen, onNavigate, tutorialId }) => {
   const isActive = activeScreen === screen;
-  const color = isActive ? 'text-accent' : 'text-secondary hover:text-primary';
-  const tutorialId = `tutorial-nav-${label.toLowerCase()}`;
-
   return (
-    <button 
+    <button
       id={tutorialId}
-      onClick={() => onNavigate(screen)} 
-      className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${color}`}
+      onClick={() => onNavigate(screen)}
+      className={`flex flex-col items-center justify-center w-16 h-16 transition-all duration-300 rounded-2xl ${isActive ? 'text-accent' : 'text-secondary hover:text-primary'}`}
     >
-      <Icon className="w-6 h-6 mb-1" />
-      <span className={`text-xs font-semibold transition-all ${isActive ? 'font-bold' : ''}`}>{label}</span>
+      <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-100'}`}>
+        {icon}
+      </div>
+      <span className={`text-xs font-semibold mt-1 transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-100'}`}>
+        {label}
+      </span>
     </button>
   );
 };
 
+const navItems = [
+  { screen: Screen.Home, label: 'Home', icon: <HomeIcon className="w-6 h-6" />, tutorialId: 'tutorial-nav-home' },
+  { screen: Screen.InnerCompass, label: 'Compass', icon: <CompassRoseIcon className="w-6 h-6" />, tutorialId: 'tutorial-nav-compass' },
+  { screen: Screen.Game, label: 'Island', icon: <IslandIcon className="w-6 h-6" />, tutorialId: 'tutorial-nav-island' },
+  { screen: Screen.FinancialGoals, label: 'Goals', icon: <GoalsIcon className="w-6 h-6" />, tutorialId: 'tutorial-nav-goals' },
+  { screen: Screen.Profile, label: 'Profile', icon: <ProfileIcon className="w-6 h-6" />, tutorialId: 'tutorial-nav-profile' },
+];
+
 const BottomNav: React.FC<BottomNavProps> = ({ activeScreen, onNavigate }) => {
   return (
-    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg bg-card/80 backdrop-blur-sm rounded-2xl shadow-card">
-      <div className="flex justify-around items-center h-20">
-        <NavItem screen={Screen.Home} activeScreen={activeScreen} onNavigate={onNavigate} Icon={HomeIcon} label="Home" />
-        <NavItem screen={Screen.FinancialGoals} activeScreen={activeScreen} onNavigate={onNavigate} Icon={GoalsIcon} label="Goals" />
-        <NavItem screen={Screen.Game} activeScreen={activeScreen} onNavigate={onNavigate} Icon={IslandIcon} label="Island" />
-        <NavItem screen={Screen.InnerCompass} activeScreen={activeScreen} onNavigate={onNavigate} Icon={CompassIcon} label="Compass" />
-        <NavItem screen={Screen.Profile} activeScreen={activeScreen} onNavigate={onNavigate} Icon={ProfileIcon} label="Profile" />
-      </div>
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-sm border-t border-light-shadow z-50">
+        <div className="max-w-2xl mx-auto flex justify-around p-1">
+            {navItems.map(item => (
+                <NavItem key={item.screen} {...item} activeScreen={activeScreen} onNavigate={onNavigate} />
+            ))}
+        </div>
     </nav>
   );
 };
