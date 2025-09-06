@@ -159,7 +159,8 @@ const brixCatalog: BrixComponent[] = [
 const MAP_WIDTH = 20
 const MAP_HEIGHT = 20
 
-// Definitive Fix: New map layout based on user-provided "Treasure Map" image.
+// Definitive Fix: New, playable map layout based on the user's "Treasure Map" image.
+// The starting area is now in the bottom-left and connected to the main island.
 const mapLayout = [
     "WWWWWWWWWWWWWWWWWWWW",
     "WWWWWWLLLLLWWWWWWWWW",
@@ -177,10 +178,10 @@ const mapLayout = [
     "WWLLLLLLLLLLLLLLLLWW",
     "WWWLLLLLLLLLLMLLLLWW",
     "WWWWLLLLLLLLLLLLLLWW",
-    "WWWWWWLLLLLLLLLLWWWW",
-    "WWWWWWWWWWLLLLWWWWWW",
-    "WWWWWWWWWWLLLWWWWWWW",
-    "WWWWWWWWWHWWWWWWWWWW",
+    "WWWWLLLLLLLLLLLLLLWW",
+    "WWLLWWWWWWWWWWWWWWWW",
+    "WWLLWWWWWWWWWWWWWWWW",
+    "WWHWWWWWWWWWWWWWWWWW",
 ].join("").split("");
 
   
@@ -469,7 +470,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [isHintLoading, setIsHintLoading] = useState(false);
   const HINT_COST = 25;
 
-  const [viewport, setViewport] = useState({ x: 5, y: 11 }); // Definitive Fix: Center on bottom of the map
+  // Definitive Fix: Set viewport to the bottom-left corner of the map.
+  const [viewport, setViewport] = useState({ x: 0, y: 11 }); 
   const [showFullMapForTutorial, setShowFullMapForTutorial] = useState(false);
   const VIEWPORT_SIZE = 9;
 
@@ -1067,7 +1069,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
             const isOcean = terrain === "W" || terrain === "D";
             const canPlace = isRevealed && (terrain === 'L' || isCleared) && !placed && placingBrixId;
 
-            const isTutorialCell = mapX === 10 && mapY === 18;
+            const isTutorialCell = mapX === 2 && mapY === 18;
             const cellId = isTutorialCell && !isFullMap ? 'tutorial-place-cell' : undefined;
 
             cells.push(

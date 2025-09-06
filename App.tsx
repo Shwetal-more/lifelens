@@ -61,10 +61,10 @@ const COIN_CONVERSION_RATE = 2; // 1 currency unit = 2 Doubloons
 
 // Helper function to calculate initially revealed land cells
 const getInitialRevealedCells = () => {
-    // Definitive Fix: Reveal the shipwreck and the correct adjacent land tile on the new map.
+    // Definitive Fix: Reveal the shipwreck and the correct adjacent land tile on the new bottom-left map area.
     return [
-        { x: 10, y: 19 }, // Shipwreck 'H'
-        { x: 10, y: 18 }, // The one starting land tile 'L'
+        { x: 2, y: 19 }, // Shipwreck 'H'
+        { x: 2, y: 18 }, // The one starting land tile 'L'
     ];
 };
 
