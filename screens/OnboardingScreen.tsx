@@ -126,7 +126,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
   ];
 
   return (
-    <div className="p-4 flex flex-col justify-between h-full bg-background overflow-hidden">
+    <div className="p-4 flex flex-col h-full bg-background">
         <style>{`
             @keyframes slide-in-from-right { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
             @keyframes slide-out-to-left { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-30px); } }
@@ -138,8 +138,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
             .step-container[data-direction="backward"][data-active="false"] { animation: slide-out-to-right 0.4s ease-in-out forwards; }
             .step-container[data-direction="backward"][data-active="true"] { animation: slide-in-from-left 0.4s ease-in-out forwards; }
         `}</style>
-
-        <div>
+        
+        {/* --- TOP HEADER (FIXED) --- */}
+        <div className="flex-shrink-0">
             <div className="flex justify-between items-center mb-2">
                 <h1 className="text-2xl font-bold text-primary">Profile Setup</h1>
                 <button onClick={handleSkip} className="text-sm font-semibold text-secondary px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors">Skip</button>
@@ -158,7 +159,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
             </div>
         </div>
       
-        <div className="flex-grow relative">
+        {/* --- MIDDLE CONTENT (SCROLLABLE) --- */}
+        <div className="flex-grow relative overflow-y-auto py-4">
             {stepContent.map((item, index) => (
                 <div 
                   key={index}
@@ -178,7 +180,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
             ))}
         </div>
 
-      <div className="pt-8 flex items-center justify-between">
+      {/* --- BOTTOM NAVIGATION (FIXED) --- */}
+      <div className="pt-4 flex-shrink-0 flex items-center justify-between">
         <button onClick={handlePrevStep} disabled={step === 1} className="text-secondary font-bold py-4 px-8 rounded-xl hover:bg-gray-100 disabled:opacity-50">
           Back
         </button>
