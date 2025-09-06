@@ -13,47 +13,6 @@ interface TutorialHighlightProps {
   advancesBy?: 'action' | 'next';
 }
 
-// A more robust overlay system using multiple divs to create a "hole"
-// This prevents the overlay from intercepting clicks meant for the highlighted element.
-const Overlay: React.FC<{ box: DOMRect; isVisible: boolean }> = ({ box, isVisible }) => {
-    const overlayStyle: React.CSSProperties = {
-        position: 'fixed',
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        transition: 'opacity 300ms ease-in-out',
-        opacity: isVisible ? 1 : 0,
-        pointerEvents: 'auto', // This blocks clicks on the rest of the screen
-    };
-
-    const top = { ...overlayStyle, top: 0, left: 0, width: '100%', height: `${box.top}px` };
-    const bottom = { ...overlayStyle, top: `${box.bottom}px`, left: 0, width: '100%', height: `calc(100vh - ${box.bottom}px)` };
-    const left = { ...overlayStyle, top: `${box.top}px`, left: 0, width: `${box.left}px`, height: `${box.height}px` };
-    const right = { ...overlayStyle, top: `${box.top}px`, left: `${box.right}px`, width: `calc(100vw - ${box.right}px)`, height: `${box.height}px` };
-
-    return (
-        <>
-            <div style={top} />
-            <div style={bottom} />
-            <div style={left} />
-            <div style={right} />
-        </>
-    );
-};
-
-const Border: React.FC<{ box: DOMRect; isVisible: boolean }> = ({ box, isVisible }) => (
-    <div
-        className="fixed border-2 border-white rounded-xl transition-all duration-300 ease-in-out"
-        style={{
-            left: box.left - 4,
-            top: box.top - 4,
-            width: box.width + 8,
-            height: box.height + 8,
-            opacity: isVisible ? 1 : 0,
-            pointerEvents: 'none', // The border itself should not be clickable
-        }}
-    />
-);
-
-
 const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, text, step, totalSteps, onNext, onSkip, isVoiceOverEnabled, advancesBy = 'next' }) => {
   const [highlightBox, setHighlightBox] = useState<DOMRect | null>(null);
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({ opacity: 0 });
@@ -170,15 +129,54 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
 
   const showNextButton = advancesBy === 'next';
 
+  // --- New Overlay and Border Logic ---
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    transition: 'all 300ms ease-in-out',
+    opacity: isVisible && highlightBox ? 1 : 0,
+    pointerEvents: isVisible ? 'auto' : 'none',
+  };
+
+  if (isVisible && highlightBox) {
+    const padding = 4;
+    const top = highlightBox.top - padding;
+    const left = highlightBox.left - padding;
+    const bottom = highlightBox.bottom + padding;
+    const right = highlightBox.right + padding;
+    // This creates a hole in the overlay, allowing clicks to pass through
+    overlayStyle.clipPath = `polygon(
+        0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%,
+        ${left}px ${top}px,
+        ${right}px ${top}px,
+        ${right}px ${bottom}px,
+        ${left}px ${bottom}px,
+        ${left}px ${top}px
+    )`;
+  }
+
+  const borderStyle: React.CSSProperties = {
+    position: 'fixed',
+    transition: 'all 300ms ease-in-out',
+    pointerEvents: 'none',
+    border: '2px solid white',
+    borderRadius: '0.75rem',
+    opacity: isVisible && highlightBox ? 1 : 0,
+  };
+
+  if (isVisible && highlightBox) {
+    const padding = 4;
+    borderStyle.top = `${highlightBox.top - padding}px`;
+    borderStyle.left = `${highlightBox.left - padding}px`;
+    borderStyle.width = `${highlightBox.width + (padding * 2)}px`;
+    borderStyle.height = `${highlightBox.height + (padding * 2)}px`;
+  }
+
   return (
     <div className="fixed inset-0 z-[9998] pointer-events-none">
-      {/* New overlay system */}
-      {highlightBox && (
-        <>
-            <Overlay box={highlightBox} isVisible={isVisible} />
-            <Border box={highlightBox} isVisible={isVisible} />
-        </>
-       )}
+      <div style={overlayStyle} className="pointer-events-auto" />
+      <div style={borderStyle} />
 
       {/* Popover */}
       <div
