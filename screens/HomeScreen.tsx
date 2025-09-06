@@ -144,6 +144,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
 
       { userProfile && userProfile.age > 0 && (
          <button
+            id="tutorial-ai-chat-button"
             onClick={() => onNavigateToChat('general')}
             className="fixed bottom-28 right-4 bg-primary text-white rounded-full p-4 shadow-lg transform hover:scale-110 transition-transform z-40"
             aria-label="Open AI Assistant"
@@ -157,7 +158,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
         <h1 className="text-3xl font-bold text-primary">Ready for today's journey?</h1>
       </header>
       
-      <div className="bg-card p-5 rounded-2xl shadow-card">
+      <div id="tutorial-summary-card" className="bg-card p-5 rounded-2xl shadow-card">
           <h3 className="font-bold text-lg text-primary mb-3">7-Day Summary</h3>
           <div className="flex justify-around text-center">
               <div>

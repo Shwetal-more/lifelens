@@ -67,7 +67,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, on
         .toggle-checkbox:checked { right: 0; border-color: #1DE9B6; }
         .toggle-checkbox:checked + .toggle-label { background-color: #1DE9B6; }
       `}</style>
-      <div className="flex flex-col items-center text-center">
+      <div id="tutorial-profile-header" className="flex flex-col items-center text-center">
         <img src={`https://i.pravatar.cc/150?u=a042581f4e29026704d`} alt="Profile" className="w-24 h-24 rounded-full shadow-lg border-4 border-white" />
         <div className="mt-4">
           <h1 className="text-2xl font-bold text-primary">{userProfile?.name || 'User'}</h1>
@@ -83,7 +83,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, on
           <span className="text-secondary text-lg font-bold">{'>'}</span>
         </div>
         
-        <div onClick={() => onNavigate(Screen.Achievements)} className="bg-card p-4 rounded-2xl shadow-card flex justify-between items-center cursor-pointer transition-transform transform hover:-translate-y-0.5">
+        <div id="tutorial-achievements-button" onClick={() => onNavigate(Screen.Achievements)} className="bg-card p-4 rounded-2xl shadow-card flex justify-between items-center cursor-pointer transition-transform transform hover:-translate-y-0.5">
           <span className="font-semibold">🏆 Achievements</span>
           <span className="text-secondary text-lg font-bold">{'>'}</span>
         </div>

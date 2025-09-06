@@ -140,7 +140,7 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
         <p className="text-secondary mt-1">Reflect on your mood and uncover your patterns.</p>
       </div>
 
-      <div className="bg-card p-5 rounded-2xl shadow-card">
+      <div id="tutorial-mood-tracker" className="bg-card p-5 rounded-2xl shadow-card">
         <h2 className="text-lg font-bold text-primary mb-4 text-center">How are you feeling right now?</h2>
         
         {isSaved && selectedMood ? (

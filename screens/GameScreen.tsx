@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType } from "../types"
 import { getPirateRiddle, getFinancialQuest, getWordHint } from "../services/geminiService"
@@ -1193,7 +1194,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       </Modal>
 
       {/* --- HEADER & ACTIONS --- */}
-      <header className="flex justify-between items-center mb-4">
+      <header id="pirates-legacy-header" className="flex justify-between items-center mb-4">
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-amber-900" style={{ fontFamily: "'IM Fell English SC', serif" }}>
             Pirate's Legacy

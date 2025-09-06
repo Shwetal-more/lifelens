@@ -73,14 +73,34 @@ const getInitialRevealedCells = () => {
 };
 
 const appTutorialConfig = [
+    // Step 1: Welcome on Home Screen
     { targetId: 'tutorial-welcome-header', screen: Screen.Home, title: "Welcome to LifeLens!", text: "This is your Home screen, your central dashboard for your financial and emotional well-being." },
-    { targetId: 'tutorial-log-activity-grid', screen: Screen.Home, title: "Log Everything", text: "Here, you can quickly log new income, expenses, moods, or notes. Staying consistent is key!" },
-    { targetId: 'tutorial-nav-goals', screen: Screen.Home, title: "Set Your Goals", text: "Let's check out the Goals screen. This is where you'll track your biggest dreams." },
-    { targetId: 'tutorial-forge-north-star', screen: Screen.FinancialGoals, title: "Your North Star", text: "Your first goal is special. Set a 'North Star' to unlock powerful features, like the Aevum Vault." },
-    { targetId: 'tutorial-nav-compass', screen: Screen.FinancialGoals, title: "Find Your Compass", text: "Now for the magic. The Inner Compass screen helps you understand the patterns behind your feelings and spending." },
-    { targetId: 'tutorial-compass-content', screen: Screen.InnerCompass, title: "Discover Insights", text: "Track your mood here and see how it connects to your spending over time. Uncover your 'Secret Patterns'!" },
-    { targetId: 'tutorial-nav-island', screen: Screen.InnerCompass, title: "Pirate's Legacy", text: "Your financial success in the real world powers a game! Let's take a quick look at your island." },
-    { targetId: 'tutorial-welcome-header', screen: Screen.Game, title: "Your Adventure Awaits!", text: "This is your island. A separate, more detailed tutorial will begin here shortly. This concludes the main app tour. Enjoy your journey!" },
+    // Step 2: Explain Summary on Home Screen
+    { targetId: 'tutorial-summary-card', screen: Screen.Home, title: "Your 7-Day Summary", text: "Get a quick overview of your recent income, expenses, and savings right here." },
+    // Step 3: Explain Logging on Home Screen
+    { targetId: 'tutorial-log-activity-grid', screen: Screen.Home, title: "Log Everything", text: "Use these buttons to quickly log new income, expenses, moods, or notes. Staying consistent is key!" },
+    // Step 4: Explain AI Chat on Home Screen
+    { targetId: 'tutorial-ai-chat-button', screen: Screen.Home, title: "Meet Kai, Your AI Assistant", text: "Have a question? Tap here anytime to chat with Kai for personalized financial advice." },
+    // Step 5: Navigate to Goals
+    { targetId: 'tutorial-nav-goals', screen: Screen.Home, title: "Set Your Goals", text: "Now, let's head to the Goals screen. This is where you'll plan for your biggest dreams." },
+    // Step 6: Explain North Star Goal
+    { targetId: 'tutorial-forge-north-star', screen: Screen.FinancialGoals, title: "Your North Star", text: "Your first and most important goal is your 'North Star'. Achieving it unlocks powerful features, like the Aevum Vault." },
+    // Step 7: Navigate to Compass
+    { targetId: 'tutorial-nav-compass', screen: Screen.FinancialGoals, title: "Find Your Compass", text: "Next up is the magic. The Inner Compass helps you see the patterns behind your feelings and spending." },
+    // Step 8: Explain Compass Screen
+    { targetId: 'tutorial-compass-content', screen: Screen.InnerCompass, title: "Discover Insights", text: "This entire screen is dedicated to helping you find your 'Secret Patterns' by connecting your mood to your spending habits over time." },
+    // Step 9: Highlight Mood Tracker
+    { targetId: 'tutorial-mood-tracker', screen: Screen.InnerCompass, title: "Track Your Mood", text: "Start by logging how you feel right here. The more you log, the smarter the insights become." },
+    // Step 10: Navigate to Profile
+    { targetId: 'tutorial-nav-profile', screen: Screen.InnerCompass, title: "Manage Your Profile", text: "Let's take a quick look at your profile and settings." },
+    // Step 11: Explain Profile Screen
+    { targetId: 'tutorial-profile-header', screen: Screen.Profile, title: "Your Account", text: "Here you can edit your profile details, manage settings, and track your progress." },
+    // Step 12: Highlight Achievements
+    { targetId: 'tutorial-achievements-button', screen: Screen.Profile, title: "Track Achievements", text: "As you use the app, you'll unlock badges for your accomplishments. Check them out here!" },
+    // Step 13: Navigate to Game (Island)
+    { targetId: 'tutorial-nav-island', screen: Screen.Profile, title: "And Now for an Adventure...", text: "Your financial journey in the real world powers a game! Let's go to your island." },
+    // Step 14: Final message on Game screen
+    { targetId: 'pirates-legacy-header', screen: Screen.Game, title: "Your Adventure Awaits!", text: "This is your island. A separate, more detailed tutorial will begin here shortly. This concludes the main app tour. Enjoy your journey!" },
 ];
 
 
