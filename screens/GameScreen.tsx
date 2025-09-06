@@ -1297,7 +1297,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
             const cellDescription = `Cell at column ${mapX + 1}, row ${mapY + 1}. Type: ${terrainDescription}, Status: ${revealedStatus}${contentStatus}`;
             
             // Assign a specific ID for the tutorial to highlight
-            const isTutorialCell = mapX === 2 && mapY === 10;
+            const isTutorialCell = mapX === 6 && mapY === 18;
             const cellId = isTutorialCell ? 'tutorial-place-cell' : undefined;
 
 
