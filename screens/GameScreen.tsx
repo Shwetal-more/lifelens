@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType } from "../types"
-import { getPirateRiddle, getFinancialQuest, getGameIntroStory, getWordHint } from "../services/geminiService"
+import { getPirateRiddle, getFinancialQuest, getWordHint } from "../services/geminiService"
 import { speechService } from "../services/speechService"
 import {
   SeaTile,
@@ -15,6 +15,8 @@ import {
   ShipwreckTile,
 } from "../components/MapTiles"
 import { usePersistentState } from "../hooks/usePersistentState";
+import TutorialHighlight from '../components/TutorialHighlight';
+
 
 // --- ICONS ---
 const DoubloonIcon = () => (
@@ -381,6 +383,16 @@ const getTerrainDescription = (char: string) => {
     }
 };
 
+const tutorialConfig = [
+    { targetId: 'tutorial-doubloons', title: "Yer Doubloons", text: "Ahoy! This here is yer treasure chest. The more ye save in the real world, the more Doubloons ye'll have to spend on this island." },
+    { targetId: 'tutorial-shop-button', title: "The Shop", text: "Let's get ye started. Head to the shop to see what ye can build. Go on, give it a click!" },
+    { targetId: 'tutorial-shop-item', title: "Buy Yer First Piece", text: "Every settlement needs a start. I'll front ye the coin for a Driftwood Hut. Click it to 'buy' it for free!" },
+    { targetId: 'tutorial-cargo-button', title: "Check Yer Cargo", text: "Excellent! Anything ye buy is stored in yer cargo hold. Open it up to see what ye've got." },
+    { targetId: 'tutorial-cargo-item', title: "Select to Place", text: "There's yer new hut! Select it now to get ready to place it on the island." },
+    { targetId: 'tutorial-place-cell', title: "Build Yer Legacy", text: "Find a nice clear spot like this one and click to place yer hut. This is the first step to building yer legacy!" },
+    { targetId: 'tutorial-quest-button', title: "Seek Adventure!", text: "A fine start! To reveal more of the island and earn more Doubloons, ye'll need to complete quests. Find new ones right here!" },
+];
+
 // --- MAIN GAME SCREEN ---
 interface GameScreenProps {
   brixCoins: number
@@ -392,40 +404,6 @@ interface GameScreenProps {
   userName: string
   addNotification: (message: string, type: NotificationType) => void;
 }
-
-const tutorialSteps = [
-    {
-        icon: '🧞‍♂️',
-        title: 'A New Horizon!',
-        text: "Ahoy, Captain! I'm Kai, the Genie of the Doubloon. Welcome to yer new island! This land is special—it thrives on yer real-world financial wisdom!"
-    },
-    {
-        icon: <DoubloonIcon />,
-        title: 'Earning Doubloons',
-        text: "Here's the secret: every time ye save money in yer world, ye earn Doubloons here. The more ye save, the richer yer legacy becomes!"
-    },
-    {
-        icon: <ShopIcon />,
-        title: 'The Shop',
-        text: "Use yer Doubloons at the Shop to buy everything ye need to build yer settlement, from humble huts to mighty signal towers."
-    },
-    {
-        icon: <CargoIcon />,
-        title: "Captain's Cargo",
-        text: "What ye buy is stored in yer Cargo. Open it up to see yer inventory and select items to place on the island."
-    },
-    {
-        icon: <QuestIcon />,
-        title: 'Quests & Adventure',
-        text: "Adventure awaits! Seek out Quests to test yer wits. Completing them earns ye Doubloons and reveals more of this mysterious island."
-    },
-    {
-        icon: '👍',
-        title: "Let's Begin!",
-        text: "That's the gist of it, Captain! Save wisely, build yer legacy, and uncover the island's ultimate treasure. Good luck!"
-    }
-];
-
 
 const GameScreen: React.FC<GameScreenProps> = ({
   brixCoins,
@@ -460,47 +438,84 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [timerPhase, setTimerPhase] = useState<'reading' | 'answering' | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Tutorial State
-  const [hasSeenTutorial, setHasSeenTutorial] = usePersistentState('hasSeenGameTutorial', false);
-  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
+  const [hasSeenTutorial, setHasSeenTutorial] = usePersistentState('hasSeenGameTutorial.v2', false);
+  const [tutorialState, setTutorialState] = useState({ isActive: !hasSeenTutorial, step: 0 });
   
   const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   
-  // Daily Quest Limit
   const [dailyQuestData, setDailyQuestData] = usePersistentState<{ date: string; count: number } | null>('dailyQuestData', null);
   const DAILY_QUEST_LIMIT = 8;
   
-  // Hangman State
   const [hint, setHint] = useState<string | null>(null);
   const [isHintLoading, setIsHintLoading] = useState(false);
   const HINT_COST = 25;
 
   const currentQuest = useMemo(() => gameState.quests.find((q) => !q.isCompleted), [gameState.quests])
   
-  // Tutorial effect
   useEffect(() => {
-    if (!hasSeenTutorial) {
-        const timer = setTimeout(() => setIsTutorialOpen(true), 500);
-        return () => clearTimeout(timer);
+    // Contextual tutorial step advancement
+    if (tutorialState.isActive) {
+        if (isShopOpen && tutorialState.step === 1) { // After "Click Shop" is shown
+            setTutorialState(prev => ({ ...prev, step: 2 })); // Advance to "Highlight Item"
+        }
+        if (isInventoryOpen && tutorialState.step === 3) { // After "Click Cargo" is shown
+            setTutorialState(prev => ({ ...prev, step: 4 })); // Advance to "Highlight Cargo Item"
+        }
     }
-  }, [hasSeenTutorial]);
+  }, [isShopOpen, isInventoryOpen, tutorialState.isActive, tutorialState.step]);
+
 
   const handleTutorialNext = () => {
-    if (tutorialStep < tutorialSteps.length - 1) {
-        setTutorialStep(prev => prev + 1);
-    } else {
-        setIsTutorialOpen(false);
+    const currentStep = tutorialState.step;
+    const nextStep = currentStep + 1;
+
+    // Special logic for specific steps
+    if (currentStep === 1) { // After highlighting shop button, force it open
+        setIsShopOpen(true);
+        return; // The useEffect will handle advancing the step
+    }
+    if (currentStep === 2) { // After highlighting shop item
+        // Give the user a free item to ensure they can proceed
+        onUpdateGameState(gs => {
+            const newInventory = [...gs.inventory];
+            const existing = newInventory.find(i => i.brixId === 'shelter_1');
+            if(existing) {
+                existing.quantity += 1;
+            } else {
+                newInventory.push({ brixId: 'shelter_1', quantity: 1 });
+            }
+            return { ...gs, inventory: newInventory };
+        });
+        addNotification("I've added a Driftwood Hut to yer cargo to get ye started!", 'info');
+        setIsShopOpen(false); // Close the shop for them
+    }
+    if (currentStep === 3) { // After highlighting cargo button, force it open
+        setIsInventoryOpen(true);
+        return;
+    }
+    if (currentStep === 4) { // After highlighting cargo item
+        setPlacingBrixId('shelter_1');
+        setIsInventoryOpen(false);
+    }
+     if (currentStep === 5) { // After highlighting place cell
+        setPlacingBrixId(null); // Clear placing mode
+    }
+
+
+    if (nextStep >= tutorialConfig.length) {
+        setTutorialState({ isActive: false, step: 0 });
         setHasSeenTutorial(true);
+    } else {
+        setTutorialState(prev => ({ ...prev, step: nextStep }));
     }
   };
 
-  const handleTutorialPrev = () => {
-    setTutorialStep(prev => Math.max(0, prev - 1));
+  const handleTutorialSkip = () => {
+    setTutorialState({ isActive: false, step: 0 });
+    setHasSeenTutorial(true);
   };
 
 
-  // Voice-over effects
   useEffect(() => {
     if (gameState.isVoiceOverEnabled) {
       if (isQuestOpen && currentQuest && !questFeedback && timerPhase === 'reading') {
@@ -525,12 +540,10 @@ const GameScreen: React.FC<GameScreenProps> = ({
     return () => speechService.cancel();
   }, [isQuestOpen, currentQuest, questFeedback, gameState.isVoiceOverEnabled, timerPhase, gameState.activeMinigameState]);
   
-  // Cleanup speech on unmount
   useEffect(() => {
     return () => speechService.cancel();
   }, []);
 
-  // Timer logic
   const stopTimer = useCallback(() => {
     if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -554,11 +567,11 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
       if (timer > 0) {
           timerRef.current = setInterval(() => setTimer(t => (t !== null ? t - 1 : null)), 1000);
-      } else { // timer === 0
+      } else { 
           if (timerPhase === 'reading') {
               setTimerPhase('answering');
               setTimer(15);
-          } else { // answering time is up
+          } else { 
               stopTimer();
               setQuestFeedback("Time's up, matey! Try again later.");
               setTimeout(() => {
@@ -588,7 +601,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
         if (remaining === 0) {
             setCooldownTime('');
             if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
-            onUpdateGameState(gs => ({...gs})); // Force re-render to update button state
+            onUpdateGameState(gs => ({...gs}));
         } else {
             const minutes = Math.floor(remaining / 60000);
             const seconds = Math.floor((remaining % 60000) / 1000);
@@ -598,7 +611,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
     const now = Date.now();
     if (gameState.questCooldownUntil && gameState.questCooldownUntil > now) {
-        updateCooldown(); // Initial call
+        updateCooldown();
         cooldownIntervalRef.current = setInterval(updateCooldown, 1000);
     } else {
         setCooldownTime('');
@@ -717,6 +730,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
         onPlaceBrix(placingBrixId, x, y)
         setPlacingBrixId(null)
         setIsInventoryOpen(false)
+        if (tutorialState.isActive && tutorialState.step === 5) {
+            handleTutorialNext();
+        }
       }
     }
   }
@@ -732,8 +748,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const completeQuest = useCallback(
     (quest: Quest) => {
       stopTimer();
-      const QUEST_COOLDOWN = 3 * 60 * 1000; // 3 minutes
-      const QUEST_COOLDOWN_THRESHOLD = 5; // Cooldown after 5 quests
+      const QUEST_COOLDOWN = 3 * 60 * 1000;
+      const QUEST_COOLDOWN_THRESHOLD = 5;
       const totalDoubloons = (quest.reward.doubloons || 0) + (quest.data.rewardCoins || 0);
 
       onUpdateGameState(prevGameState => {
@@ -842,7 +858,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
         if (decision.isCorrect) {
             completeQuest(currentQuest);
         } else {
-            // If incorrect, show feedback, then close modal to allow retry
             setTimeout(() => {
                 setIsQuestOpen(false);
                 setQuestFeedback(null);
@@ -883,7 +898,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       const wordIsGuessed = word.split('').every(l => newGuessedLetters.includes(l));
       
       if (wordIsGuessed) {
-          stopTimer(); // Stop timer on correct word guess
+          stopTimer();
           setQuestFeedback(`Correct! The word was ${word}!`);
           setTimeout(() => {
               const nextProgress = progress + 1;
@@ -893,7 +908,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
                   setQuestFeedback("On to the next word!");
                    setHint(null);
                   onUpdateGameState(gs => ({...gs, activeMinigameState: { type: 'hangman', progress: nextProgress, hangman: { guessedLetters: [], wrongGuesses: 0, hintUsed: false }}}));
-                  // Restart timer for next word
                   setTimerPhase('reading');
                   setTimer(15);
               }
@@ -951,7 +965,19 @@ const GameScreen: React.FC<GameScreenProps> = ({
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
       }}
     >
-      {/* --- MODALS & TOOLTIP --- */}
+      {/* --- MODALS & TUTORIAL --- */}
+      {tutorialState.isActive && (
+        <TutorialHighlight
+            targetId={tutorialConfig[tutorialState.step].targetId}
+            title={tutorialConfig[tutorialState.step].title}
+            text={tutorialConfig[tutorialState.step].text}
+            step={tutorialState.step}
+            totalSteps={tutorialConfig.length}
+            onNext={handleTutorialNext}
+            onSkip={handleTutorialSkip}
+        />
+      )}
+
       {tooltip && tooltip.visible && (
         <div
           className="fixed bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg z-[60] pointer-events-none transition-opacity duration-200"
@@ -961,39 +987,12 @@ const GameScreen: React.FC<GameScreenProps> = ({
         </div>
       )}
       
-      <Modal isOpen={isTutorialOpen} onClose={() => {}} title="Captain's First Briefing">
-        <div className="p-2 text-center" style={{ fontFamily: "serif" }}>
-            <div className="text-6xl mb-4">{tutorialSteps[tutorialStep].icon}</div>
-            <h3 className="text-xl font-bold text-amber-800 mb-2">{tutorialSteps[tutorialStep].title}</h3>
-            <p className="text-secondary">{tutorialSteps[tutorialStep].text}</p>
-            <div className="flex justify-between items-center mt-6">
-                <button 
-                    onClick={handleTutorialPrev} 
-                    disabled={tutorialStep === 0}
-                    className="font-semibold text-secondary disabled:opacity-50"
-                >
-                    Back
-                </button>
-                <div className="flex gap-2">
-                    {tutorialSteps.map((_, i) => (
-                        <div key={i} className={`w-2 h-2 rounded-full ${i === tutorialStep ? 'bg-amber-600' : 'bg-amber-200'}`}></div>
-                    ))}
-                </div>
-                <button 
-                    onClick={handleTutorialNext}
-                    className="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-amber-600"
-                >
-                    {tutorialStep === tutorialSteps.length - 1 ? "Let's Go!" : "Next"}
-                </button>
-            </div>
-        </div>
-      </Modal>
-
       <Modal isOpen={isShopOpen} onClose={() => setIsShopOpen(false)} title="Brix & Pieces Shop">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1">
           {brixCatalog.map((brix) => (
             <div
               key={brix.id}
+              id={brix.id === 'shelter_1' ? 'tutorial-shop-item' : undefined}
               onClick={() => onPurchaseBrix(brix)}
               className="bg-amber-100 p-3 rounded-xl text-center cursor-pointer hover:ring-2 ring-amber-500"
             >
@@ -1024,6 +1023,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
               {inventoryWithData.map((item) => (
                 <div
                   key={item.id}
+                  id={item.id === 'shelter_1' ? 'tutorial-cargo-item' : undefined}
                   onClick={() => {
                     setPlacingBrixId(item.id!)
                     setIsInventoryOpen(false)
@@ -1218,7 +1218,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
       <div className="bg-white/80 backdrop-blur-sm p-2 rounded-2xl shadow-card mb-4">
         <div className="flex justify-between items-center">
-          <div className="font-bold text-xl text-amber-900 flex items-center gap-2 pl-2">
+          <div id="tutorial-doubloons" className="font-bold text-xl text-amber-900 flex items-center gap-2 pl-2">
             <DoubloonIcon />
             <span>{brixCoins.toLocaleString()}</span>
           </div>
@@ -1230,12 +1230,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
               📜 Log
             </button>
             <button
+              id="tutorial-cargo-button"
               onClick={() => setIsInventoryOpen(true)}
               className="bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-xl flex items-center gap-2"
             >
               <CargoIcon /> Cargo
             </button>
             <button
+              id="tutorial-shop-button"
               onClick={() => setIsShopOpen(true)}
               className="bg-amber-400 text-amber-900 font-bold py-3 px-4 rounded-xl flex items-center gap-2"
             >
@@ -1248,6 +1250,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       {!currentQuest ? (
         <div className="mb-4">
           <button
+            id="tutorial-quest-button"
             onClick={generateNextAIGeneratedQuest}
             disabled={isGeneratingQuest || !!cooldownTime || (dailyQuestData?.count ?? 0) >= DAILY_QUEST_LIMIT}
             className="w-full bg-teal-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
@@ -1298,10 +1301,16 @@ const GameScreen: React.FC<GameScreenProps> = ({
             const revealedStatus = isRevealed ? 'Revealed' : 'Foggy';
             const contentStatus = brixData ? `, contains ${brixData.name}` : '';
             const cellDescription = `Cell at column ${mapX + 1}, row ${mapY + 1}. Type: ${terrainDescription}, Status: ${revealedStatus}${contentStatus}`;
+            
+            // Assign a specific ID for the tutorial to highlight
+            const isTutorialCell = mapX === 2 && mapY === 10;
+            const cellId = isTutorialCell ? 'tutorial-place-cell' : undefined;
+
 
             return (
               <div
                 key={i}
+                id={cellId}
                 role="gridcell"
                 aria-label={cellDescription}
                 onClick={() => handleCellClick(mapX, mapY)}
