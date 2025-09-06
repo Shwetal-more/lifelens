@@ -300,7 +300,7 @@ const Modal: React.FC<{ isOpen: boolean; onClose: () => void; children: React.Re
 
 const HangmanFigure = ({ wrongGuesses }: { wrongGuesses: number }) => (
     <svg viewBox="0 0 100 120" className="w-32 h-40 mx-auto stroke-amber-900" strokeWidth="4" fill="none">
-        {/* Stand */}
+        {/* Gallows */}
         <line x1="10" y1="110" x2="90" y2="110" />
         <line x1="30" y1="110" x2="30" y2="10" />
         <line x1="28" y1="10" x2="70" y2="10" />
@@ -609,10 +609,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
         newQuestData = {
           ...newQuestData,
           type: "riddle",
-          title: "A Riddle on the Wind",
+          title: riddleData.title,
           description: "A rolled-up parchment washes ashore with a mysterious question...",
           reward: { doubloons: 100, mapPieces: [] },
-          data: riddleData,
+          data: {
+            question: riddleData.question,
+            options: riddleData.options,
+            answer: riddleData.answer,
+          },
         };
       } else {
         const financialData = await getFinancialQuest(usedScenarios);
@@ -620,10 +624,13 @@ const GameScreen: React.FC<GameScreenProps> = ({
         newQuestData = {
           ...newQuestData,
           type: "decision",
-          title: "A Captain's Choice",
+          title: financialData.title,
           description: "A situation arises that tests your financial wisdom, captain.",
           reward: { doubloons: 150, mapPieces: [] },
-          data: financialData,
+          data: {
+            scenario: financialData.scenario,
+            choices: financialData.choices,
+          },
         };
       }
       onUpdateGameState((prevGameState) => ({
@@ -1058,21 +1065,34 @@ const GameScreen: React.FC<GameScreenProps> = ({
               {currentQuest.type === 'hangman' && gameState.activeMinigameState?.hangman && (
                   <div className="text-center">
                       <HangmanFigure wrongGuesses={gameState.activeMinigameState.hangman.wrongGuesses} />
-                      <p className="text-sm text-center font-bold">Word {gameState.activeMinigameState.progress + 1} of {currentQuest.data.words!.length}</p>
-                      <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center">
+                      <p className="text-sm text-center font-bold text-amber-800 my-2">Word {gameState.activeMinigameState.progress + 1} of {currentQuest.data.words!.length}</p>
+                       <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center text-primary" style={{ fontFamily: "'IM Fell English SC', serif" }}>
                           {currentQuest.data.words![gameState.activeMinigameState.progress].split('').map((char, i) => (
-                              <span key={i} className="inline-block w-8 border-b-4 border-primary">{gameState.activeMinigameState!.hangman!.guessedLetters.includes(char) ? char : '_'}</span>
+                              <span key={i} className="inline-block w-8 border-b-4 border-amber-800">{gameState.activeMinigameState!.hangman!.guessedLetters.includes(char) ? char : '\u00A0'}</span>
                           ))}
                       </div>
-                       {hint && <p className="text-sm text-secondary italic mb-2">Hint: "{hint}"</p>}
-                       <button onClick={handleGetHint} disabled={isHintLoading || gameState.activeMinigameState.hangman.hintUsed || brixCoins < HINT_COST} className="text-sm bg-amber-200 text-amber-800 font-bold py-1 px-3 rounded-full mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                          {isHintLoading ? "..." : `Get Hint (-${HINT_COST} Doubloons)`}
-                       </button>
+                      
+                      <div className="min-h-[4rem] flex items-center justify-center flex-col">
+                        {hint && <p className="text-sm text-secondary italic mb-2 p-2 bg-amber-100 rounded-md">Hint: "{hint}"</p>}
+                        
+                        <button 
+                            onClick={handleGetHint} 
+                            disabled={isHintLoading || gameState.activeMinigameState.hangman.hintUsed || brixCoins < HINT_COST} 
+                            className="text-sm bg-amber-200 text-amber-900 font-bold py-2 px-4 rounded-full mb-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group"
+                        >
+                          💡 
+                          {isHintLoading 
+                            ? "Thinking..." 
+                            : gameState.activeMinigameState.hangman.hintUsed 
+                            ? "Hint Used" 
+                            : `Get Hint (-${HINT_COST})`}
+                        </button>
+                      </div>
 
-                      <div className="flex flex-wrap gap-2 justify-center mt-4">
+                      <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mt-2">
                           {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
                               <button key={letter} onClick={() => handleHangmanGuess(letter)} disabled={gameState.activeMinigameState!.hangman!.guessedLetters.includes(letter)}
-                                  className="w-8 h-8 font-bold bg-amber-100 rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-amber-200">
+                                  className="w-8 h-8 font-bold bg-amber-100 rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-amber-200 transition-colors">
                                   {letter}
                               </button>
                           ))}

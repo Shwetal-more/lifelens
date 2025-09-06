@@ -1,5 +1,5 @@
 import { GoogleGenAI, type GenerateContentResponse, type Chat, Type } from "@google/genai"
-import type { Expense, MoodType, MoodEntry, FinancialGoal, UserProfile, Quest } from "../types"
+import type { Expense, MoodType, MoodEntry, FinancialGoal, UserProfile, Quest, DecisionChoice } from "../types"
 
 if (!process.env.API_KEY) {
   throw new Error("API_KEY environment variable not set")
@@ -249,36 +249,21 @@ export const getPostPurchaseReassurance = async (
 
 export const getPirateRiddle = async (
   usedRiddles: string[] = [],
-): Promise<{ question: string; options: string[]; answer: string }> => {
+): Promise<{ title: string; question: string; options: string[]; answer: string }> => {
   try {
     const riddleTopics = [
-      "saving money",
-      "budgeting",
-      "investing",
-      "debt management",
-      "compound interest",
-      "emergency funds",
-      "financial goals",
-      "spending habits",
-      "credit scores",
-      "insurance",
-      "retirement planning",
-      "passive income",
-      "risk management",
-      "inflation",
-      "diversification",
+      "saving money", "budgeting", "investing", "debt", "compound interest", "emergency fund", "financial goals",
+      "credit score", "insurance", "retirement", "passive income", "inflation", "diversification",
     ]
+    const selectedTopic = riddleTopics[Math.floor(Math.random() * riddleTopics.length)];
 
-    const unusedTopics = riddleTopics.filter(
-      (topic) => !usedRiddles.some((used) => used.toLowerCase().includes(topic.toLowerCase())),
-    )
-
-    const selectedTopic =
-      unusedTopics.length > 0
-        ? unusedTopics[Math.floor(Math.random() * unusedTopics.length)]
-        : riddleTopics[Math.floor(Math.random() * riddleTopics.length)]
-
-    const prompt = `Create a unique, clever, interesting, and short pirate-themed riddle about the financial concept of "${selectedTopic}". The riddle should subtly explain what the concept is and how it's useful. The tone should be adventurous and educational. Keep the riddle under 25 words. Make it different from these previously used ones: ${usedRiddles.join(", ")}. The answer should be a single word or a short two-word phrase. Also provide two plausible but incorrect answers.`
+    const prompt = `Create a unique, clever, interesting, and short pirate-themed riddle about the financial concept of "${selectedTopic}". 
+- The riddle should subtly explain the concept's real-world usefulness.
+- Keep the riddle brief (under 25 words) and engaging.
+- Make it different from these previously used ones: ${usedRiddles.join(", ")}.
+- Also provide a short, pirate-themed title for this riddle (e.g., 'The Ghostly Guardian', 'Blackbeard's Bargain').
+- Provide a single-word or short two-word phrase answer.
+- Provide two plausible incorrect options.`
 
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -288,58 +273,42 @@ export const getPirateRiddle = async (
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            question: {
-              type: Type.STRING,
-              description: "The riddle question.",
-            },
-            answer: {
-              type: Type.STRING,
-              description: "The single-word or short-phrase answer to the riddle.",
-            },
+            title: { type: Type.STRING, description: "A short, pirate-themed title for the riddle." },
+            question: { type: Type.STRING, description: "The riddle question." },
+            answer: { type: Type.STRING, description: "The single-word or short-phrase answer." },
             options: {
               type: Type.ARRAY,
-              description: "An array of 3 strings: the correct answer and two plausible incorrect answers.",
+              description: "An array of 3 strings: the correct answer and two incorrect options.",
               items: { type: Type.STRING },
             },
           },
-          required: ["question", "answer", "options"],
+          required: ["title", "question", "answer", "options"],
         },
       },
     })
     const parsed = JSON.parse(response.text)
-    return { question: parsed.question, options: parsed.options, answer: parsed.answer }
+    return { title: parsed.title, question: parsed.question, options: parsed.options, answer: parsed.answer }
   } catch (error) {
     console.error("Error getting pirate riddle:", error)
-    // Fallback riddles with variety
     const fallbackRiddles = [
       {
-        question: "I guard yer treasure but have no lock or key. The more ye give me, the richer ye'll be. What am I?",
-        answer: "savings",
-        options: ["chest", "savings", "debt"],
+        title: "The Invisible Stash",
+        question: "I guard yer treasure but have no lock. The more ye give me, the richer ye'll be. What am I?",
+        answer: "Savings",
+        options: ["Chest", "Savings", "Debt"],
       },
       {
-        question:
-          "I grow without sunlight, multiply without breeding. Feed me regularly and I'll secure yer future's needing. What am I?",
-        answer: "investment",
-        options: ["investment", "parrot", "map"],
-      },
-      {
-        question: "I'm a storm that sinks ships when ignored, but faced early, I'm easily conquered. What am I?",
-        answer: "debt",
-        options: ["kraken", "debt", "hurricane"],
-      },
-      {
-        question:
-          "I'm a plan for yer doubloons, dividing them fair. Without me, yer treasure vanishes into thin air. What am I?",
-        answer: "budget",
-        options: ["budget", "compass", "crew"],
+        title: "The Captain's Map",
+        question: "I'm a plan for yer doubloons, dividing them fair. Without me, yer treasure vanishes into thin air. What am I?",
+        answer: "Budget",
+        options: ["Budget", "Compass", "Crew"],
       },
     ]
     return fallbackRiddles[Math.floor(Math.random() * fallbackRiddles.length)]
   }
 }
 
-export const getFinancialQuest = async (usedScenarios: string[] = []): Promise<Quest["data"]> => {
+export const getFinancialQuest = async (usedScenarios: string[] = []): Promise<{ title: string; scenario: string; choices: DecisionChoice[] }> => {
   try {
     const scenarios = [
       "investment risk vs reward",
@@ -363,7 +332,11 @@ export const getFinancialQuest = async (usedScenarios: string[] = []): Promise<Q
         ? unusedScenarios[Math.floor(Math.random() * unusedScenarios.length)]
         : scenarios[Math.floor(Math.random() * scenarios.length)]
 
-    const prompt = `Create a unique pirate-themed financial decision quest about "${selectedScenario}". Make it different from these previous scenarios: ${usedScenarios.join(", ")}. Provide a short "scenario" (under 40 words) where a pirate captain must make a choice that reflects this financial principle. Then, provide two "choices". Each choice should have a "text" description, an "isCorrect" boolean, and a "feedback" sentence explaining the financial lesson in pirate terms.`
+    const prompt = `Create a unique pirate-themed financial decision quest about "${selectedScenario}". 
+- Make it different from these previous scenarios: ${usedScenarios.join(", ")}. 
+- Provide a short, pirate-themed title for this quest (e.g., 'The Sunken Scroll's Secret', 'Kraken's Ransom').
+- Provide a short "scenario" (under 40 words) where a pirate captain must make a choice that reflects this financial principle. 
+- Then, provide two "choices". Each choice should have a "text" description, an "isCorrect" boolean, and a "feedback" sentence explaining the financial lesson in pirate terms.`
 
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -373,6 +346,7 @@ export const getFinancialQuest = async (usedScenarios: string[] = []): Promise<Q
         responseSchema: {
           type: Type.OBJECT,
           properties: {
+            title: { type: Type.STRING, description: "A short, pirate-themed title for the quest." },
             scenario: {
               type: Type.STRING,
               description: "The short scenario for the financial decision.",
@@ -394,7 +368,7 @@ export const getFinancialQuest = async (usedScenarios: string[] = []): Promise<Q
               },
             },
           },
-          required: ["scenario", "choices"],
+          required: ["title", "scenario", "choices"],
         },
       },
     })
@@ -404,6 +378,7 @@ export const getFinancialQuest = async (usedScenarios: string[] = []): Promise<Q
     // Enhanced fallback scenarios
     const fallbackScenarios = [
       {
+        title: "The Risky Gamble",
         scenario:
           "Ye found a treasure map! It points to the 'Quicksand Quays' (high risk, high reward) or the 'Golden Gull Grotto' (low risk, modest reward). Where do ye seek yer fortune?",
         choices: [
@@ -421,6 +396,7 @@ export const getFinancialQuest = async (usedScenarios: string[] = []): Promise<Q
         ],
       },
       {
+        title: "The Storm's Toll",
         scenario:
           "A storm damaged yer ship! Ye can either use yer emergency chest of 500 doubloons for repairs, or borrow 500 doubloons at high interest from Blackbeard's Bank.",
         choices: [
