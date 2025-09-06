@@ -452,59 +452,28 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
   const currentQuest = useMemo(() => gameState.quests.find((q) => !q.isCompleted), [gameState.quests])
   
+  // Effect to advance tutorial based on game state changes (user actions)
   useEffect(() => {
-    // Contextual tutorial step advancement
-    if (tutorialState.isActive) {
-        if (isShopOpen && tutorialState.step === 1) { // After "Click Shop" is shown
-            setTutorialState(prev => ({ ...prev, step: 2 })); // Advance to "Highlight Item"
-        }
-        if (isInventoryOpen && tutorialState.step === 3) { // After "Click Cargo" is shown
-            setTutorialState(prev => ({ ...prev, step: 4 })); // Advance to "Highlight Cargo Item"
-        }
+    if (!tutorialState.isActive) return;
+
+    switch (tutorialState.step) {
+      case 1: // Expecting shop to open
+        if (isShopOpen) setTutorialState(prev => ({ ...prev, step: 2 }));
+        break;
+      case 3: // Expecting inventory to open
+        if (isInventoryOpen) setTutorialState(prev => ({ ...prev, step: 4 }));
+        break;
+      case 4: // Expecting user to select an item to place
+        if (placingBrixId) setTutorialState(prev => ({ ...prev, step: 5 }));
+        break;
     }
-  }, [isShopOpen, isInventoryOpen, tutorialState.isActive, tutorialState.step]);
+  }, [isShopOpen, isInventoryOpen, placingBrixId, tutorialState.isActive, tutorialState.step]);
 
 
   const handleTutorialNext = () => {
-    const currentStep = tutorialState.step;
-    const nextStep = currentStep + 1;
-
-    // Special logic for specific steps
-    if (currentStep === 1) { // After highlighting shop button, force it open
-        setIsShopOpen(true);
-        return; // The useEffect will handle advancing the step
-    }
-    if (currentStep === 2) { // After highlighting shop item
-        // Give the user a free item to ensure they can proceed
-        onUpdateGameState(gs => {
-            const newInventory = [...gs.inventory];
-            const existing = newInventory.find(i => i.brixId === 'shelter_1');
-            if(existing) {
-                existing.quantity += 1;
-            } else {
-                newInventory.push({ brixId: 'shelter_1', quantity: 1 });
-            }
-            return { ...gs, inventory: newInventory };
-        });
-        addNotification("I've added a Driftwood Hut to yer cargo to get ye started!", 'info');
-        setIsShopOpen(false); // Close the shop for them
-    }
-    if (currentStep === 3) { // After highlighting cargo button, force it open
-        setIsInventoryOpen(true);
-        return;
-    }
-    if (currentStep === 4) { // After highlighting cargo item
-        setPlacingBrixId('shelter_1');
-        setIsInventoryOpen(false);
-    }
-     if (currentStep === 5) { // After highlighting place cell
-        setPlacingBrixId(null); // Clear placing mode
-    }
-
-
+    const nextStep = tutorialState.step + 1;
     if (nextStep >= tutorialConfig.length) {
-        setTutorialState({ isActive: false, step: 0 });
-        setHasSeenTutorial(true);
+        handleTutorialSkip();
     } else {
         setTutorialState(prev => ({ ...prev, step: nextStep }));
     }
@@ -639,6 +608,9 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
 
   const generateNextAIGeneratedQuest = useCallback(async () => {
+    if (tutorialState.isActive && tutorialState.step === 6) {
+        handleTutorialSkip(); // Finish tutorial when user seeks their first quest
+    }
     const today = new Date().toDateString();
     if (dailyQuestData && dailyQuestData.date === today && dailyQuestData.count >= DAILY_QUEST_LIMIT) {
         addNotification("Ye've had yer fill of adventure for one day, Captain! Come back tomorrow.", 'info');
@@ -696,7 +668,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
     } finally {
       setIsGeneratingQuest(false);
     }
-  }, [gameState.quests.length, onUpdateGameState, usedRiddles, usedScenarios, dailyQuestData, addNotification]);
+  }, [gameState.quests.length, onUpdateGameState, usedRiddles, usedScenarios, dailyQuestData, addNotification, tutorialState, handleTutorialSkip]);
 
  useEffect(() => {
     const discoveredLandmarkQuests = new Set(gameState.quests.map(q => q.id));
@@ -718,6 +690,27 @@ const GameScreen: React.FC<GameScreenProps> = ({
 }, [gameState.revealedCells, gameState.quests, onUpdateGameState]);
 
 
+  const handlePurchaseBrixWrapper = (brix: BrixComponent) => {
+    // Special handling for tutorial's "free" purchase
+    if (tutorialState.isActive && tutorialState.step === 2 && brix.id === 'shelter_1') {
+        onUpdateGameState(gs => {
+            const newInventory = [...gs.inventory];
+            const existing = newInventory.find(i => i.brixId === 'shelter_1');
+            if(existing) {
+                existing.quantity += 1;
+            } else {
+                newInventory.push({ brixId: 'shelter_1', quantity: 1 });
+            }
+            return { ...gs, inventory: newInventory };
+        });
+        addNotification("I've added a Driftwood Hut to yer cargo!", 'info');
+        setIsShopOpen(false);
+        setTutorialState(prev => ({ ...prev, step: 3 })); // Advance to next step
+    } else {
+        onPurchaseBrix(brix);
+    }
+  };
+
 
   const handleCellClick = (x: number, y: number) => {
     if (placingBrixId) {
@@ -731,7 +724,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
         setPlacingBrixId(null)
         setIsInventoryOpen(false)
         if (tutorialState.isActive && tutorialState.step === 5) {
-            handleTutorialNext();
+            setTutorialState(prev => ({ ...prev, step: 6 }));
         }
       }
     }
@@ -994,7 +987,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
             <div
               key={brix.id}
               id={brix.id === 'shelter_1' ? 'tutorial-shop-item' : undefined}
-              onClick={() => onPurchaseBrix(brix)}
+              onClick={() => handlePurchaseBrixWrapper(brix)}
               className="bg-amber-100 p-3 rounded-xl text-center cursor-pointer hover:ring-2 ring-amber-500"
             >
               <p className="text-4xl">{brix.asset}</p>

@@ -111,12 +111,14 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
           borderRadius: '12px',
         }}
         onClick={(e) => {
-          if (step === 1 || step === 3) {
-            e.stopPropagation();
-          } else {
-            e.preventDefault();
-            e.stopPropagation();
-          }
+            // Allow click-through on all interactive steps (all except the first one).
+            if (step > 0) {
+              e.stopPropagation();
+            } else {
+              // Block click-through on purely informational steps.
+              e.preventDefault();
+              e.stopPropagation();
+            }
         }}
       ></div>
 
