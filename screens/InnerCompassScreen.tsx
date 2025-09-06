@@ -1,9 +1,9 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Expense, MoodEntry, UserProfile, MoodType } from '../types';
 import { getMoodTip, getFinancialInsight } from '../services/geminiService';
 import InsightChart from '../components/InsightChart';
-import SpendingBreakdownChart from '../components/SpendingBreakdownChart';
 import CategoryPieChart from '../components/CategoryPieChart';
 import MoodTrendChart from '../components/MoodTrendChart';
 
@@ -233,11 +233,6 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
                     <h3 className="text-lg font-bold text-primary mb-4 text-center">Mood Trend</h3>
                     <MoodTrendChart moods={filteredMoods} />
                 </div>
-
-                <div className="bg-card p-4 rounded-2xl shadow-card">
-                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Spending vs. Indulgence</h3>
-                    <SpendingBreakdownChart expenses={filteredExpenses} userProfile={userProfile} />
-                </div>
                 
                 <div className="bg-card p-4 rounded-2xl shadow-card">
                     <h3 className="text-lg font-bold text-primary mb-4 text-center">Category Breakdown</h3>
@@ -245,7 +240,7 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
                 </div>
 
                 <div className="bg-card p-4 rounded-2xl shadow-card">
-                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Spending vs. Mood</h3>
+                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Spending Breakdown & Mood</h3>
                     <InsightChart expenses={filteredExpenses} moods={moods} userProfile={userProfile}/>
                 </div>
             </>

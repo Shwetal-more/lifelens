@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType } from "../types"
 import { getPirateRiddle, getFinancialQuest, getGameIntroStory, getWordHint } from "../services/geminiService"
@@ -38,6 +36,12 @@ const ShopIcon = () => (
     <path d="M1 1.75A.75.75 0 0 1 1.75 1h1.628a1.75 1.75 0 0 1 1.734 1.51L5.18 3a6.5 6.5 0 0 1 12.45 2.459V6.25a.75.75 0 0 1-.75.75h-3.5a.75.75 0 0 1 0-1.5h2.383a5.002 5.002 0 0 0-9.66-1.21L4.63 3.75h1.5a.75.75 0 0 1 0 1.5h-1.5a3.25 3.25 0 0 0-3.234-2.85L1.75 2.5a.75.75 0 0 1-.75-.75ZM3.25 9A.75.75 0 0 1 4 8.25h12a.75.75 0 0 1 0 1.5H4A.75.75 0 0 1 3.25 9Zm0 3.5A.75.75 0 0 1 4 11.75h12a.75.75 0 0 1 0 1.5H4a.75.75 0 0 1-.75-.75Zm0 3.5A.75.75 0 0 1 4 15.25h12a.75.75 0 0 1 0 1.5H4a.75.75 0 0 1-.75-.75Z" />
   </svg>
 )
+const QuestIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+        <path fillRule="evenodd" d="M10 2a.75.75 0 0 1 .75.75v.521c.413.042.813.122 1.2.239.387.116.766.273 1.133.475a.75.75 0 0 1 .484 1.066l-.16.32a.75.75 0 0 1-1.002.43l-1.313-.657a5.166 5.166 0 0 0-2.28 0l-1.313.657a.75.75 0 0 1-1.002-.43l-.16-.32a.75.75 0 0 1 .484-1.066c.367-.202.746-.36 1.133-.475.387-.117.787-.197 1.2-.24v-.52A.75.75 0 0 1 10 2ZM8.667 12.093l-.413-1.033a.75.75 0 0 0-1.434-.22l-1.29 2.58a.75.75 0 0 0 .534 1.047h.213a.75.75 0 0 0 .61-.341l.163-.324 1.033-.413a.75.75 0 0 0 .22-1.434ZM11.165 14.833a.75.75 0 0 0 .22-1.434l1.033-.413.163-.324a.75.75 0 0 0 .61-.341h.213a.75.75 0 0 0 .534-1.047l-1.29-2.58a.75.75 0 0 0-1.434-.22l-.413 1.033-3.666 1.467a.75.75 0 0 0-.413.916l1.29 2.58a.75.75 0 0 0 1.344.22l.413-1.033 1.467-3.666Z" clipRule="evenodd" />
+    </svg>
+)
+
 const TreasureMapIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
@@ -389,6 +393,40 @@ interface GameScreenProps {
   addNotification: (message: string, type: NotificationType) => void;
 }
 
+const tutorialSteps = [
+    {
+        icon: '🧞‍♂️',
+        title: 'A New Horizon!',
+        text: "Ahoy, Captain! I'm Kai, the Genie of the Doubloon. Welcome to yer new island! This land is special—it thrives on yer real-world financial wisdom!"
+    },
+    {
+        icon: <DoubloonIcon />,
+        title: 'Earning Doubloons',
+        text: "Here's the secret: every time ye save money in yer world, ye earn Doubloons here. The more ye save, the richer yer legacy becomes!"
+    },
+    {
+        icon: <ShopIcon />,
+        title: 'The Shop',
+        text: "Use yer Doubloons at the Shop to buy everything ye need to build yer settlement, from humble huts to mighty signal towers."
+    },
+    {
+        icon: <CargoIcon />,
+        title: "Captain's Cargo",
+        text: "What ye buy is stored in yer Cargo. Open it up to see yer inventory and select items to place on the island."
+    },
+    {
+        icon: <QuestIcon />,
+        title: 'Quests & Adventure',
+        text: "Adventure awaits! Seek out Quests to test yer wits. Completing them earns ye Doubloons and reveals more of this mysterious island."
+    },
+    {
+        icon: '👍',
+        title: "Let's Begin!",
+        text: "That's the gist of it, Captain! Save wisely, build yer legacy, and uncover the island's ultimate treasure. Good luck!"
+    }
+];
+
+
 const GameScreen: React.FC<GameScreenProps> = ({
   brixCoins,
   gameState,
@@ -422,10 +460,10 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [timerPhase, setTimerPhase] = useState<'reading' | 'answering' | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Intro State
-  const [isIntroModalOpen, setIntroModalOpen] = useState(false)
-  const [isIntroLoading, setIsIntroLoading] = useState(true)
-  const [introStory, setIntroStory] = useState("")
+  // Tutorial State
+  const [hasSeenTutorial, setHasSeenTutorial] = usePersistentState('hasSeenGameTutorial', false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
   
   const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   
@@ -440,14 +478,29 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
   const currentQuest = useMemo(() => gameState.quests.find((q) => !q.isCompleted), [gameState.quests])
   
-  // Voice-over effects
+  // Tutorial effect
   useEffect(() => {
-    if (isIntroModalOpen && !isIntroLoading && introStory && gameState.isVoiceOverEnabled) {
-      speechService.speak(introStory);
+    if (!hasSeenTutorial) {
+        const timer = setTimeout(() => setIsTutorialOpen(true), 500);
+        return () => clearTimeout(timer);
     }
-    return () => speechService.cancel();
-  }, [isIntroModalOpen, isIntroLoading, introStory, gameState.isVoiceOverEnabled]);
+  }, [hasSeenTutorial]);
 
+  const handleTutorialNext = () => {
+    if (tutorialStep < tutorialSteps.length - 1) {
+        setTutorialStep(prev => prev + 1);
+    } else {
+        setIsTutorialOpen(false);
+        setHasSeenTutorial(true);
+    }
+  };
+
+  const handleTutorialPrev = () => {
+    setTutorialStep(prev => Math.max(0, prev - 1));
+  };
+
+
+  // Voice-over effects
   useEffect(() => {
     if (gameState.isVoiceOverEnabled) {
       if (isQuestOpen && currentQuest && !questFeedback && timerPhase === 'reading') {
@@ -522,19 +575,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
       };
   }, [timer, timerPhase, stopTimer]);
 
-
-  useEffect(() => {
-    const hasSeenIntro = localStorage.getItem("hasSeenGameIntro")
-    if (!hasSeenIntro) {
-      setIntroModalOpen(true)
-      setIsIntroLoading(true)
-      getGameIntroStory(userName).then((story) => {
-        setIntroStory(story)
-        setIsIntroLoading(false)
-      })
-    }
-  }, [userName])
-  
   useEffect(() => {
     if (cooldownIntervalRef.current) {
         clearInterval(cooldownIntervalRef.current);
@@ -570,11 +610,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
         }
     };
   }, [gameState.questCooldownUntil, onUpdateGameState]);
-
-  const handleCloseIntro = () => {
-    localStorage.setItem("hasSeenGameIntro", "true")
-    setIntroModalOpen(false)
-  }
 
   const handleOpenQuest = (quest: Quest) => {
     if (!quest) return;
@@ -926,21 +961,31 @@ const GameScreen: React.FC<GameScreenProps> = ({
         </div>
       )}
       
-      <Modal isOpen={isIntroModalOpen} onClose={() => {}} title="A New Horizon!">
+      <Modal isOpen={isTutorialOpen} onClose={() => {}} title="Captain's First Briefing">
         <div className="p-2 text-center" style={{ fontFamily: "serif" }}>
-          {isIntroLoading ? (
-            <p className="animate-pulse">The Genie is charting the course...</p>
-          ) : (
-            <>
-              <p className="text-secondary whitespace-pre-wrap">{introStory}</p>
-              <button
-                onClick={handleCloseIntro}
-                className="mt-6 bg-amber-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-amber-600 transform hover:-translate-y-0.5 transition-all"
-              >
-                Let's Begin!
-              </button>
-            </>
-          )}
+            <div className="text-6xl mb-4">{tutorialSteps[tutorialStep].icon}</div>
+            <h3 className="text-xl font-bold text-amber-800 mb-2">{tutorialSteps[tutorialStep].title}</h3>
+            <p className="text-secondary">{tutorialSteps[tutorialStep].text}</p>
+            <div className="flex justify-between items-center mt-6">
+                <button 
+                    onClick={handleTutorialPrev} 
+                    disabled={tutorialStep === 0}
+                    className="font-semibold text-secondary disabled:opacity-50"
+                >
+                    Back
+                </button>
+                <div className="flex gap-2">
+                    {tutorialSteps.map((_, i) => (
+                        <div key={i} className={`w-2 h-2 rounded-full ${i === tutorialStep ? 'bg-amber-600' : 'bg-amber-200'}`}></div>
+                    ))}
+                </div>
+                <button 
+                    onClick={handleTutorialNext}
+                    className="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-amber-600"
+                >
+                    {tutorialStep === tutorialSteps.length - 1 ? "Let's Go!" : "Next"}
+                </button>
+            </div>
         </div>
       </Modal>
 
