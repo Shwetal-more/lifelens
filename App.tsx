@@ -13,13 +13,12 @@ import FinancialGoalsScreen from './screens/FinancialGoalsScreen';
 import AddFinancialGoalScreen from './screens/AddFinancialGoalScreen';
 import AchievementsScreen from './screens/AchievementsScreen';
 import BottomNav from './components/BottomNav';
-import { getWeeklySmsInsight, getGoalRiddle, startChatSession, getDailyVaultWhisper } from './services/geminiService';
+import { getWeeklySmsInsight, getGoalRiddle, continueChat, getDailyVaultWhisper } from './services/geminiService';
 import AevumVaultScreen from './screens/FutureMeScreen';
 import SetVaultWishScreen from './screens/SetWishScreen';
 import VaultRevealedScreen from './screens/WishRevealedScreen';
 import GameScreen from './screens/GameScreen';
 import ChatScreen from './screens/ChatScreen';
-import { Chat } from '@google/genai';
 import SpendingCheckScreen from './screens/SpendingCheckScreen';
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import { speechService } from './services/speechService';
@@ -165,7 +164,6 @@ const App: React.FC = () => {
   const [pendingGoalForWish, setPendingGoalForWish] = useState<Omit<FinancialGoal, 'id'> | null>(null);
   const [revealedGoal, setRevealedGoal] = useState<FinancialGoal | null>(null);
   const [dailyWhisper, setDailyWhisper] = useState<string | null>(null);
-  const [chat, setChat] = useState<Chat | null>(null);
   const [isAssistantLoading, setIsAssistantLoading] = useState(false);
   const [chatContext, setChatContext] = useState<'general' | 'game'>('general');
   const [showConfetti, setShowConfetti] = useState(false);
@@ -191,16 +189,12 @@ const App: React.FC = () => {
     // Initial setup based on persisted user profile
     if (userProfile) {
         setCurrentScreen(Screen.Home); 
-        if (userProfile.age) {
-            const chatSession = startChatSession(userProfile, chatContext);
-            setChat(chatSession);
-            if (chatHistory.length === 0) {
-                setChatHistory([{
-                    role: 'model',
-                    content: `Welcome back, ${userProfile.name}! I'm Kai. How can I help you today?`,
-                    date: new Date()
-                }]);
-            }
+        if (userProfile.age && chatHistory.length === 0) {
+            setChatHistory([{
+                role: 'model',
+                content: `Welcome back, ${userProfile.name}! I'm Kai. How can I help you today?`,
+                date: new Date()
+            }]);
         }
     } else {
         setCurrentScreen(Screen.Welcome);
@@ -213,13 +207,6 @@ const App: React.FC = () => {
     
     setIsInitialized(true);
   }, []); // Only run once on initial load
-
-  useEffect(() => {
-     if (userProfile?.age) {
-        const chatSession = startChatSession(userProfile, chatContext);
-        setChat(chatSession);
-     }
-  }, [chatContext, userProfile]);
 
   useEffect(() => {
     if (insightTimeoutRef.current) {
@@ -409,8 +396,6 @@ const App: React.FC = () => {
   const handleSaveProfile = (profile: UserProfile) => {
     setUserProfile(profile);
     
-    const chatSession = startChatSession(profile, 'general');
-    setChat(chatSession);
     setChatHistory([{
         role: 'model',
         content: `Hello ${profile.name}! I'm Kai, your personal financial assistant. How can I help you today?`,
@@ -425,15 +410,16 @@ const App: React.FC = () => {
   };
   
   const handleSendMessage = async (message: string) => {
-    if (!chat || isAssistantLoading) return;
+    if (isAssistantLoading || !userProfile) return;
 
     const userMessage: ChatMessage = { role: 'user', content: message, date: new Date() };
-    setChatHistory(prev => [...prev, userMessage]);
+    const currentHistory = [...chatHistory, userMessage];
+    setChatHistory(currentHistory);
     setIsAssistantLoading(true);
 
     try {
-        const response = await chat.sendMessage({ message });
-        const modelMessage: ChatMessage = { role: 'model', content: response.text, date: new Date() };
+        const responseText = await continueChat(userProfile, chatContext, chatHistory, message);
+        const modelMessage: ChatMessage = { role: 'model', content: responseText, date: new Date() };
         setChatHistory(prev => [...prev, modelMessage]);
     } catch (error) {
         console.error("Assistant error:", error);
