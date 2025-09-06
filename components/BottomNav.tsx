@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Screen } from '../types';
 
@@ -51,9 +52,14 @@ const NavItem: React.FC<{
 }> = ({ screen, activeScreen, onNavigate, Icon, label }) => {
   const isActive = activeScreen === screen;
   const color = isActive ? 'text-accent' : 'text-secondary hover:text-primary';
+  const tutorialId = `tutorial-nav-${label.toLowerCase()}`;
 
   return (
-    <button onClick={() => onNavigate(screen)} className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${color}`}>
+    <button 
+      id={tutorialId}
+      onClick={() => onNavigate(screen)} 
+      className={`flex flex-col items-center justify-center w-full transition-colors duration-200 ${color}`}
+    >
       <Icon className="w-6 h-6 mb-1" />
       <span className={`text-xs font-semibold transition-all ${isActive ? 'font-bold' : ''}`}>{label}</span>
     </button>

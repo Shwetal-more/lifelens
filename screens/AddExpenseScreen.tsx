@@ -64,7 +64,6 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     }
   }, [pendingData, isEditMode, onClearPendingData]);
 
-  // FIX: Replaced comma with pipe in Omit type to correctly form a union of keys.
   const processAndShowInsight = async (expenseData: Omit<Expense, 'id' | 'date'>) => {
     setIsLoading(true);
     const insight = await getEmotionalSpendingInsight(expenseData, expenses);
@@ -86,12 +85,8 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     
     setPendingExpense(expenseData);
 
-    if (isEditMode) {
-        onSave(expenseData);
-        return;
-    }
-
-    if (!isUseful) {
+    // The mindful spending prompt should only appear for new indulgent expenses.
+    if (!isUseful && !isEditMode) {
       setIsLoading(true);
       const prompt = await getMindfulSpendingPrompt(expenseData, goals);
       setMindfulPrompt(prompt);
@@ -99,6 +94,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       return; 
     }
     
+    // Show insight for both new and edited expenses.
     await processAndShowInsight(expenseData);
   };
 
@@ -122,7 +118,8 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
 
   const handleFinalizeSave = () => {
     if (pendingExpense) {
-      if (!pendingExpense.isUseful) {
+      // Only show post-purchase reassurance for NEW indulgent expenses
+      if (!pendingExpense.isUseful && !isEditMode) {
         getPostPurchaseReassurance(pendingExpense, goals.length > 0 ? goals[0] : null)
           .then(reassurance => addNotification(reassurance, 'info'));
       }

@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Expense, MoodEntry, UserProfile, MoodType } from '../types';
 import { getMoodTip, getFinancialInsight } from '../services/geminiService';
@@ -135,7 +134,7 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
   };
 
   return (
-    <div className="p-4 pt-8 space-y-8">
+    <div id="tutorial-compass-content" className="p-4 pt-8 space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-primary">Inner Compass</h1>
         <p className="text-secondary mt-1">Reflect on your mood and uncover your patterns.</p>

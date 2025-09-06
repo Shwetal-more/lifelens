@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType, Income } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -29,6 +28,7 @@ import SmsImportScreen from './screens/SmsImportScreen';
 import { usePersistentState } from './hooks/usePersistentState';
 import { sendNotification } from './services/notificationService';
 import { auth } from './services/firebase';
+import TutorialHighlight from './components/TutorialHighlight';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -71,6 +71,17 @@ const getInitialRevealedCells = () => {
         { x: 7, y: 18 }, // Land 'L'
     ];
 };
+
+const appTutorialConfig = [
+    { targetId: 'tutorial-welcome-header', screen: Screen.Home, title: "Welcome to LifeLens!", text: "This is your Home screen, your central dashboard for your financial and emotional well-being." },
+    { targetId: 'tutorial-log-activity-grid', screen: Screen.Home, title: "Log Everything", text: "Here, you can quickly log new income, expenses, moods, or notes. Staying consistent is key!" },
+    { targetId: 'tutorial-nav-goals', screen: Screen.Home, title: "Set Your Goals", text: "Let's check out the Goals screen. This is where you'll track your biggest dreams." },
+    { targetId: 'tutorial-forge-north-star', screen: Screen.FinancialGoals, title: "Your North Star", text: "Your first goal is special. Set a 'North Star' to unlock powerful features, like the Aevum Vault." },
+    { targetId: 'tutorial-nav-compass', screen: Screen.FinancialGoals, title: "Find Your Compass", text: "Now for the magic. The Inner Compass screen helps you understand the patterns behind your feelings and spending." },
+    { targetId: 'tutorial-compass-content', screen: Screen.InnerCompass, title: "Discover Insights", text: "Track your mood here and see how it connects to your spending over time. Uncover your 'Secret Patterns'!" },
+    { targetId: 'tutorial-nav-island', screen: Screen.InnerCompass, title: "Pirate's Legacy", text: "Your financial success in the real world powers a game! Let's take a quick look at your island." },
+    { targetId: 'tutorial-welcome-header', screen: Screen.Game, title: "Your Adventure Awaits!", text: "This is your island. A separate, more detailed tutorial will begin here shortly. This concludes the main app tour. Enjoy your journey!" },
+];
 
 
 const NotificationToast: React.FC<{ notification: Notification; onDismiss: () => void }> = ({ notification, onDismiss }) => {
@@ -130,6 +141,8 @@ const App: React.FC = () => {
   const [aevumVault, setAevumVault] = usePersistentState<AevumVault | null>('aevumVault', null);
   const [lastLogDate, setLastLogDate] = usePersistentState<Date | null>('lastLogDate', new Date());
   const [chatHistory, setChatHistory] = usePersistentState<ChatMessage[]>('chatHistory', []);
+  const [hasSeenAppTutorial, setHasSeenAppTutorial] = usePersistentState('hasSeenAppTutorial', false);
+
 
   // --- Volatile App State ---
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
@@ -144,6 +157,8 @@ const App: React.FC = () => {
   const [chatContext, setChatContext] = useState<'general' | 'game'>('general');
   const [showConfetti, setShowConfetti] = useState(false);
   const [weeklyInsight, setWeeklyInsight] = useState('');
+  const [appTutorialState, setAppTutorialState] = useState({ isActive: false, step: 0 });
+
   
   const insightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notificationSentToday = useRef(false);
@@ -390,6 +405,10 @@ const App: React.FC = () => {
     }]);
 
     setCurrentScreen(Screen.Home);
+
+    if (!hasSeenAppTutorial) {
+        setAppTutorialState({ isActive: true, step: 0 });
+    }
   };
   
   const handleSendMessage = async (message: string) => {
@@ -498,7 +517,6 @@ const App: React.FC = () => {
   
   const handleLogout = async () => {
     try {
-        // FIX: Used v8-compatible signOut method.
         await auth.signOut();
     } catch (error) {
         console.error("Error signing out from Firebase:", error);
@@ -574,6 +592,30 @@ const App: React.FC = () => {
 
   const expenseToEdit = expenses.find(e => e.id === editingExpenseId) || null;
 
+  // --- App Tutorial Logic ---
+  const handleAppTutorialSkip = () => {
+    setAppTutorialState({ isActive: false, step: 0 });
+    setHasSeenAppTutorial(true);
+    speechService.cancel();
+  };
+
+  const handleAppTutorialNext = () => {
+    const nextStepIndex = appTutorialState.step + 1;
+
+    if (nextStepIndex >= appTutorialConfig.length) {
+      handleAppTutorialSkip();
+      return;
+    }
+
+    const nextStep = appTutorialConfig[nextStepIndex];
+    if (nextStep.screen && nextStep.screen !== currentScreen) {
+      setCurrentScreen(nextStep.screen);
+    }
+    
+    setAppTutorialState(prev => ({ ...prev, step: nextStepIndex }));
+  };
+  
+  // --- Screen Rendering ---
   if (!isInitialized) {
     return <div className="h-screen w-full flex items-center justify-center"><p>Loading...</p></div>;
   }
@@ -632,6 +674,18 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background font-sans text-primary">
+        {appTutorialState.isActive && (
+            <TutorialHighlight
+                targetId={appTutorialConfig[appTutorialState.step].targetId}
+                title={appTutorialConfig[appTutorialState.step].title}
+                text={appTutorialConfig[appTutorialState.step].text}
+                step={appTutorialState.step}
+                totalSteps={appTutorialConfig.length}
+                onNext={handleAppTutorialNext}
+                onSkip={handleAppTutorialSkip}
+                isVoiceOverEnabled={gameState.isVoiceOverEnabled ?? true}
+            />
+        )}
        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm px-4 space-y-2">
             {notifications.map(notification => (
                 <NotificationToast

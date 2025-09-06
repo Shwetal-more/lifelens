@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Expense, Screen, UserProfile, AevumVault, SavingsTarget, Income } from '../types';
 
@@ -151,7 +152,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
          </button>
       )}
 
-      <header className="pt-4">
+      <header id="tutorial-welcome-header" className="pt-4">
         <p className="text-secondary text-lg">Hello, {userProfile?.name || 'Explorer'}!</p>
         <h1 className="text-3xl font-bold text-primary">Ready for today's journey?</h1>
       </header>
@@ -253,7 +254,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
         </div>
       )}
 
-      <div>
+      <div id="tutorial-log-activity-grid">
         <h2 className="text-xl font-bold text-primary mb-4">Log Your Activity</h2>
         <div className="grid grid-cols-3 gap-3">
             <button onClick={() => onNavigate(Screen.AddIncome)} className="flex flex-col items-center justify-center bg-card p-3 rounded-2xl shadow-card transition-transform transform hover:scale-105">

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { FinancialGoal, Screen, UserProfile } from '../types';
 
@@ -49,6 +50,7 @@ const FinancialGoalsScreen: React.FC<FinancialGoalsScreenProps> = ({ goals, onNa
             <h2 className="text-xl font-semibold text-primary">The Aevum Vault Awaits</h2>
             <p className="text-secondary mt-2 mb-6">Your first goal is your "North Star." Seal it in the vault with a message for your future self. When you achieve it, the vault will open, revealing your words of encouragement.</p>
             <button
+              id="tutorial-forge-north-star"
               onClick={() => onNavigate(Screen.AddFinancialGoal)}
               className="bg-accent text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-accent-dark transform hover:-translate-y-0.5 transition-all"
             >
