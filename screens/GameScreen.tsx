@@ -717,6 +717,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       });
     } catch (error) {
       console.error("Failed to generate quest:", error);
+      addNotification("Couldn't find a new quest... the winds must be against us. Try again in a moment!", 'error');
     } finally {
       setIsGeneratingQuest(false);
     }
