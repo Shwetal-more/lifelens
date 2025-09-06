@@ -86,7 +86,6 @@ const appTutorialConfig = [
     { targetId: 'tutorial-compass-header', screen: Screen.InnerCompass, title: "Map Your Inner World", text: "This screen helps you understand the connection between your feelings and your spending habits.", advancesBy: 'next' as const },
     { targetId: 'tutorial-mood-tracker', screen: Screen.InnerCompass, title: "Track Your Mood", text: "Start by logging how you feel. Over time, you'll see how your emotions influence your financial choices.", advancesBy: 'next' as const },
     { targetId: 'tutorial-secret-pattern', screen: Screen.InnerCompass, title: "Unlock Secret Patterns", text: "As you add more data, I'll analyze it and reveal interesting patterns about your habits right here.", advancesBy: 'next' as const },
-    { targetId: 'tutorial-charts-container', screen: Screen.InnerCompass, title: "Visualize Your Journey", text: "This chart gives you a visual story of your moods and spending over time. Use the filters to explore your data.", advancesBy: 'next' as const },
 
     // --- TRANSITION TO GAME ---
     { targetId: 'tutorial-nav-island', screen: Screen.InnerCompass, title: "Your Financial Legacy", text: "Finally, let's visit your island. Your real-world financial journey powers a game where you build a legacy. Tap the Island icon!", advancesBy: 'action' as const },
@@ -607,22 +606,26 @@ const App: React.FC = () => {
   const expenseToEdit = expenses.find(e => e.id === editingExpenseId) || null;
 
   // --- App Tutorial Logic ---
-  const handleAppTutorialSkip = () => {
+  const handleAppTutorialSkip = useCallback(() => {
     setAppTutorialState({ isActive: false, step: 0 });
     setHasSeenAppTutorial(true);
     speechService.cancel();
-  };
+  }, [setHasSeenAppTutorial]);
 
   const handleAppTutorialNext = useCallback(() => {
     setAppTutorialState(prev => {
       const nextStepIndex = prev.step + 1;
       if (nextStepIndex >= appTutorialConfig.length) {
-        handleAppTutorialSkip();
-        return prev;
+        // This is the "Finish" action.
+        setHasSeenAppTutorial(true);
+        speechService.cancel();
+        // Return the new state to close the tutorial.
+        return { isActive: false, step: 0 };
       }
+      // Advance to the next step.
       return { ...prev, step: nextStepIndex };
     });
-  }, []);
+  }, [setHasSeenAppTutorial]);
   
   const handleNavigation = (screen: Screen) => {
     if (appTutorialState.isActive) {
