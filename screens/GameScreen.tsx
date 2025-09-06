@@ -389,7 +389,7 @@ const tutorialConfig = [
     { targetId: 'tutorial-shop-item', title: "Buy Yer First Piece", text: "Every settlement needs a start. I'll front ye the coin for a Driftwood Hut. Click it to 'buy' it for free!", advancesBy: 'action' as const },
     { targetId: 'tutorial-cargo-button', title: "Check Yer Cargo", text: "Excellent! Anything ye buy is stored in yer cargo hold. Open it up to see what ye've got.", advancesBy: 'action' as const },
     { targetId: 'tutorial-cargo-item', title: "Select to Place", text: "There's yer new hut! Select it now to get ready to place it on the island.", advancesBy: 'action' as const },
-    { targetId: 'tutorial-place-cell', title: "Build Yer Legacy", text: "Find a nice clear spot like this one and click to place yer hut. This is the first step to building yer legacy!", advancesBy: 'action' as const },
+    { targetId: 'tutorial-place-cell', title: "Place Yer First Hut", text: "Find a nice clear spot like this one and click to place yer new hut. This is the first step to building yer legacy!", advancesBy: 'action' as const },
     { targetId: 'tutorial-quest-button', title: "Seek Adventure!", text: "A fine start! To reveal more of the island and earn more Doubloons, ye'll need to complete quests. Find new ones right here!", advancesBy: 'next' as const },
 ];
 
