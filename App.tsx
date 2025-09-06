@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType, Income } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -27,7 +26,6 @@ import { speechService } from './services/speechService';
 import SmsImportScreen from './screens/SmsImportScreen';
 import { usePersistentState } from './hooks/usePersistentState';
 import { sendNotification } from './services/notificationService';
-import { auth } from './services/firebase';
 import TutorialHighlight from './components/TutorialHighlight';
 
 
@@ -73,34 +71,27 @@ const getInitialRevealedCells = () => {
 };
 
 const appTutorialConfig = [
-    // Step 1: Welcome on Home Screen
-    { targetId: 'tutorial-welcome-header', screen: Screen.Home, title: "Welcome to LifeLens!", text: "This is your Home screen, your central dashboard for your financial and emotional well-being." },
-    // Step 2: Explain Summary on Home Screen
-    { targetId: 'tutorial-summary-card', screen: Screen.Home, title: "Your 7-Day Summary", text: "Get a quick overview of your recent income, expenses, and savings right here." },
-    // Step 3: Explain Logging on Home Screen
-    { targetId: 'tutorial-log-activity-grid', screen: Screen.Home, title: "Log Everything", text: "Use these buttons to quickly log new income, expenses, moods, or notes. Staying consistent is key!" },
-    // Step 4: Explain AI Chat on Home Screen
-    { targetId: 'tutorial-ai-chat-button', screen: Screen.Home, title: "Meet Kai, Your AI Assistant", text: "Have a question? Tap here anytime to chat with Kai for personalized financial advice." },
-    // Step 5: Navigate to Goals
-    { targetId: 'tutorial-nav-goals', screen: Screen.Home, title: "Set Your Goals", text: "Now, let's head to the Goals screen. This is where you'll plan for your biggest dreams." },
-    // Step 6: Explain North Star Goal
-    { targetId: 'tutorial-forge-north-star', screen: Screen.FinancialGoals, title: "Your North Star", text: "Your first and most important goal is your 'North Star'. Achieving it unlocks powerful features, like the Aevum Vault." },
-    // Step 7: Navigate to Compass
-    { targetId: 'tutorial-nav-compass', screen: Screen.FinancialGoals, title: "Find Your Compass", text: "Next up is the magic. The Inner Compass helps you see the patterns behind your feelings and spending." },
-    // Step 8: Explain Compass Screen
-    { targetId: 'tutorial-compass-content', screen: Screen.InnerCompass, title: "Discover Insights", text: "This entire screen is dedicated to helping you find your 'Secret Patterns' by connecting your mood to your spending habits over time." },
-    // Step 9: Highlight Mood Tracker
-    { targetId: 'tutorial-mood-tracker', screen: Screen.InnerCompass, title: "Track Your Mood", text: "Start by logging how you feel right here. The more you log, the smarter the insights become." },
-    // Step 10: Navigate to Profile
-    { targetId: 'tutorial-nav-profile', screen: Screen.InnerCompass, title: "Manage Your Profile", text: "Let's take a quick look at your profile and settings." },
-    // Step 11: Explain Profile Screen
-    { targetId: 'tutorial-profile-header', screen: Screen.Profile, title: "Your Account", text: "Here you can edit your profile details, manage settings, and track your progress." },
-    // Step 12: Highlight Achievements
-    { targetId: 'tutorial-achievements-button', screen: Screen.Profile, title: "Track Achievements", text: "As you use the app, you'll unlock badges for your accomplishments. Check them out here!" },
-    // Step 13: Navigate to Game (Island)
-    { targetId: 'tutorial-nav-island', screen: Screen.Profile, title: "And Now for an Adventure...", text: "Your financial journey in the real world powers a game! Let's go to your island." },
-    // Step 14: Final message on Game screen
-    { targetId: 'pirates-legacy-header', screen: Screen.Game, title: "Your Adventure Awaits!", text: "This is your island. A separate, more detailed tutorial will begin here shortly. This concludes the main app tour. Enjoy your journey!" },
+    // --- HOME SCREEN ---
+    { targetId: 'tutorial-welcome-header', screen: Screen.Home, title: "Welcome to LifeLens!", text: "I'm Kai, your personal guide. Let me show you around your new dashboard for financial and emotional wellness." },
+    { targetId: 'tutorial-summary-card', screen: Screen.Home, title: "Your 7-Day Summary", text: "This card gives you a quick overview of your recent income, expenses, and savings. It's your financial pulse." },
+    { targetId: 'tutorial-aevum-vault-card', screen: Screen.Home, title: "The Aevum Vault", text: "This is a special feature where you can seal goals with a message to your future self, unlocking it only when you succeed." },
+    { targetId: 'tutorial-log-activity-grid', screen: Screen.Home, title: "Log Your Activities", text: "The heart of LifeLens is here. Use these buttons to log expenses, income, and moods. Consistency unlocks powerful insights!" },
+    { targetId: 'tutorial-ai-chat-button', screen: Screen.Home, title: "Chat With Me!", text: "Have a question or need advice? Tap my icon anytime to chat. I'm here to help you on your journey." },
+    
+    // --- TRANSITION TO COMPASS ---
+    { targetId: 'tutorial-nav-compass', screen: Screen.Home, title: "Discover Your Compass", text: "Now, let's explore your Inner Compass. This is where the magic happens. Tap the Compass icon to continue." },
+    
+    // --- INNER COMPASS SCREEN ---
+    { targetId: 'tutorial-compass-header', screen: Screen.InnerCompass, title: "Map Your Inner World", text: "This screen helps you understand the connection between your feelings and your spending habits." },
+    { targetId: 'tutorial-mood-tracker', screen: Screen.InnerCompass, title: "Track Your Mood", text: "Start by logging how you feel. Over time, you'll see how your emotions influence your financial choices." },
+    { targetId: 'tutorial-secret-pattern', screen: Screen.InnerCompass, title: "Unlock Secret Patterns", text: "As you add more data, I'll analyze it and reveal interesting patterns about your habits right here." },
+    { targetId: 'tutorial-charts-container', screen: Screen.InnerCompass, title: "Visualize Your Journey", text: "These charts give you a visual story of your moods and spending over time. Use the filters to explore your data." },
+
+    // --- TRANSITION TO GAME ---
+    { targetId: 'tutorial-nav-island', screen: Screen.InnerCompass, title: "Your Financial Legacy", text: "Finally, let's visit your island. Your real-world financial journey powers a game where you build a legacy. Tap the Island icon!" },
+    
+    // --- HAND-OFF TO GAME ---
+    { targetId: 'pirates-legacy-header', screen: Screen.Game, title: "Welcome to Your Island!", text: "Every saving and goal you achieve helps you build your paradise. A more detailed game tutorial will now begin. This concludes the main app tour. Enjoy!" },
 ];
 
 
@@ -535,12 +526,7 @@ const App: React.FC = () => {
     setCurrentScreen(Screen.AddExpense);
   };
   
-  const handleLogout = async () => {
-    try {
-        await auth.signOut();
-    } catch (error) {
-        console.error("Error signing out from Firebase:", error);
-    }
+  const handleLogout = () => {
     localStorage.clear();
     window.location.reload();
   };
@@ -676,7 +662,7 @@ const App: React.FC = () => {
         }
         return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
       case Screen.Game:
-        return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} addNotification={addNotification} />;
+        return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} addNotification={addNotification} isAppTutorialRunning={appTutorialState.isActive} />;
       case Screen.Chat:
         return <ChatScreen history={chatHistory} onSendMessage={handleSendMessage} onCancel={() => setCurrentScreen(Screen.Home)} userName={userProfile?.name || 'Explorer'} isLoading={isAssistantLoading} />;
       case Screen.SpendingCheck:

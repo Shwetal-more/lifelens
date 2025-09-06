@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Expense, Screen, UserProfile, AevumVault, SavingsTarget, Income } from '../types';
 
@@ -188,7 +187,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
           <p className="text-xs text-gray-400 mt-2">A new message awaits you each day.</p>
         </div>
       ) : (
-        <div className="bg-card p-5 rounded-2xl shadow-card text-center">
+        <div id="tutorial-aevum-vault-card" className="bg-card p-5 rounded-2xl shadow-card text-center">
           <h2 className="font-bold text-lg text-primary mb-2 flex items-center justify-center gap-2">
             <VaultIcon className="w-6 h-6 text-accent"/>
             The Aevum Vault Awaits

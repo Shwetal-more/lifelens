@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Expense, MoodEntry, UserProfile, MoodType } from '../types';
 import { getMoodTip, getFinancialInsight } from '../services/geminiService';
@@ -135,7 +136,7 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
 
   return (
     <div id="tutorial-compass-content" className="p-4 pt-8 space-y-8">
-      <div className="text-center">
+      <div id="tutorial-compass-header" className="text-center">
         <h1 className="text-3xl font-bold text-primary">Inner Compass</h1>
         <p className="text-secondary mt-1">Reflect on your mood and uncover your patterns.</p>
       </div>
@@ -186,7 +187,7 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
         )}
       </div>
       
-      <div className="space-y-6">
+      <div id="tutorial-charts-container" className="space-y-6">
          <h2 className="text-xl font-bold text-primary text-center pt-4">Your Data Story</h2>
 
          <div className="bg-card p-4 rounded-2xl shadow-card space-y-3">
@@ -215,7 +216,7 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
         </div>
 
 
-        <div className="bg-card p-5 rounded-2xl shadow-card">
+        <div id="tutorial-secret-pattern" className="bg-card p-5 rounded-2xl shadow-card">
             <h2 className="text-lg font-bold text-primary mb-2">Secret Pattern Unlocked!</h2>
             <div className="min-h-[4rem] flex items-center">
                 {isLoadingInsight ? (

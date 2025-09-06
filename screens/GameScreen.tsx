@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType } from "../types"
 import { getPirateRiddle, getFinancialQuest, getWordHint } from "../services/geminiService"
@@ -385,13 +384,13 @@ const getTerrainDescription = (char: string) => {
 };
 
 const tutorialConfig = [
-    { targetId: 'tutorial-doubloons', title: "Yer Doubloons", text: "Ahoy! This here is yer treasure chest. The more ye save in the real world, the more Doubloons ye'll have to spend on this island." },
-    { targetId: 'tutorial-shop-button', title: "The Shop", text: "Let's get ye started. Head to the shop to see what ye can build. Go on, give it a click!" },
-    { targetId: 'tutorial-shop-item', title: "Buy Yer First Piece", text: "Every settlement needs a start. I'll front ye the coin for a Driftwood Hut. Click it to 'buy' it for free!" },
-    { targetId: 'tutorial-cargo-button', title: "Check Yer Cargo", text: "Excellent! Anything ye buy is stored in yer cargo hold. Open it up to see what ye've got." },
-    { targetId: 'tutorial-cargo-item', title: "Select to Place", text: "There's yer new hut! Select it now to get ready to place it on the island." },
-    { targetId: 'tutorial-place-cell', title: "Build Yer Legacy", text: "Find a nice clear spot like this one and click to place yer hut. This is the first step to building yer legacy!" },
-    { targetId: 'tutorial-quest-button', title: "Seek Adventure!", text: "A fine start! To reveal more of the island and earn more Doubloons, ye'll need to complete quests. Find new ones right here!" },
+    { targetId: 'tutorial-doubloons', title: "Yer Doubloons", text: "Ahoy! This here is yer treasure chest. The more ye save in the real world, the more Doubloons ye'll have to spend on this island.", advancesBy: 'next' as const },
+    { targetId: 'tutorial-shop-button', title: "The Shop", text: "Let's get ye started. Head to the shop to see what ye can build. Go on, give it a click!", advancesBy: 'action' as const },
+    { targetId: 'tutorial-shop-item', title: "Buy Yer First Piece", text: "Every settlement needs a start. I'll front ye the coin for a Driftwood Hut. Click it to 'buy' it for free!", advancesBy: 'action' as const },
+    { targetId: 'tutorial-cargo-button', title: "Check Yer Cargo", text: "Excellent! Anything ye buy is stored in yer cargo hold. Open it up to see what ye've got.", advancesBy: 'action' as const },
+    { targetId: 'tutorial-cargo-item', title: "Select to Place", text: "There's yer new hut! Select it now to get ready to place it on the island.", advancesBy: 'action' as const },
+    { targetId: 'tutorial-place-cell', title: "Build Yer Legacy", text: "Find a nice clear spot like this one and click to place yer hut. This is the first step to building yer legacy!", advancesBy: 'action' as const },
+    { targetId: 'tutorial-quest-button', title: "Seek Adventure!", text: "A fine start! To reveal more of the island and earn more Doubloons, ye'll need to complete quests. Find new ones right here!", advancesBy: 'next' as const },
 ];
 
 // --- MAIN GAME SCREEN ---
@@ -404,6 +403,7 @@ interface GameScreenProps {
   onNavigateToChat: (context: "general" | "game") => void
   userName: string
   addNotification: (message: string, type: NotificationType) => void;
+  isAppTutorialRunning: boolean;
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({
@@ -415,6 +415,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   onNavigateToChat,
   userName,
   addNotification,
+  isAppTutorialRunning,
 }) => {
   const [isShopOpen, setIsShopOpen] = useState(false)
   const [isInventoryOpen, setIsInventoryOpen] = useState(false)
@@ -440,7 +441,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [hasSeenTutorial, setHasSeenTutorial] = usePersistentState('hasSeenGameTutorial.v2', false);
-  const [tutorialState, setTutorialState] = useState({ isActive: !hasSeenTutorial, step: 0 });
+  const [tutorialState, setTutorialState] = useState({ isActive: false, step: 0 });
   
   const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   
@@ -452,6 +453,20 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const HINT_COST = 25;
 
   const currentQuest = useMemo(() => gameState.quests.find((q) => !q.isCompleted), [gameState.quests])
+
+  // Effect to manage the start of the game tutorial, ensuring it only begins
+  // after the main app tutorial has concluded.
+  useEffect(() => {
+    if (!isAppTutorialRunning && !hasSeenTutorial) {
+      // Small delay to allow the app tour to fade out gracefully.
+      const startTimeout = setTimeout(() => {
+        setTutorialState({ isActive: true, step: 0 });
+      }, 500); // 0.5 second delay
+
+      return () => clearTimeout(startTimeout);
+    }
+  }, [isAppTutorialRunning, hasSeenTutorial]);
+
   
   // Effect to advance tutorial based on game state changes (user actions)
   useEffect(() => {
@@ -970,6 +985,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
             onNext={handleTutorialNext}
             onSkip={handleTutorialSkip}
             isVoiceOverEnabled={gameState.isVoiceOverEnabled ?? true}
+            advancesBy={tutorialConfig[tutorialState.step].advancesBy}
         />
       )}
 

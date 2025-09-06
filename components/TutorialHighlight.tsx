@@ -10,20 +10,22 @@ interface TutorialHighlightProps {
   onNext: () => void;
   onSkip: () => void;
   isVoiceOverEnabled: boolean;
+  advancesBy?: 'action' | 'next';
 }
 
-const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, text, step, totalSteps, onNext, onSkip, isVoiceOverEnabled }) => {
+const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, text, step, totalSteps, onNext, onSkip, isVoiceOverEnabled, advancesBy = 'next' }) => {
   const [highlightBox, setHighlightBox] = useState<DOMRect | null>(null);
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({ opacity: 0 });
+  const [isVisible, setIsVisible] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const lastTargetId = useRef<string | null>(null);
 
-  // Effect for voice-over
+  // --- Effect for voice-over ---
   useEffect(() => {
-    if (isVoiceOverEnabled) {
-      // Delay to allow user to read and for UI to settle
+    if (isVoiceOverEnabled && isVisible) {
       const speechTimeout = setTimeout(() => {
         speechService.speak(`${title}. ${text}`);
-      }, 500);
+      }, 400); // Delay for UI transition
 
       return () => {
         clearTimeout(speechTimeout);
@@ -32,101 +34,127 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
     } else {
       speechService.cancel();
     }
-  }, [title, text, isVoiceOverEnabled]);
+  }, [title, text, isVoiceOverEnabled, isVisible]);
 
-
+  // --- Core Layout and Positioning Effect ---
   useLayoutEffect(() => {
-    const calculatePosition = () => {
-      const targetElement = document.getElementById(targetId);
-      const popoverElement = popoverRef.current;
-
-      if (targetElement && popoverElement) {
-        const rect = targetElement.getBoundingClientRect();
-        setHighlightBox(rect);
+    let animationFrameId: number;
+    let observer: MutationObserver;
+    let scrollTimeout: ReturnType<typeof setTimeout>;
+    
+    const positionUI = (targetElement: HTMLElement) => {
+        const newRect = targetElement.getBoundingClientRect();
+        setHighlightBox(newRect);
         
-        const popoverHeight = popoverElement.offsetHeight;
-        const popoverWidth = popoverElement.offsetWidth;
-        const spacing = 15;
+        // Position Popover
+        if (popoverRef.current) {
+            const popoverHeight = popoverRef.current.offsetHeight;
+            const popoverWidth = popoverRef.current.offsetWidth;
+            const spacing = 15;
 
-        // Vertical positioning
-        let top = rect.bottom + spacing;
-        if (top + popoverHeight > window.innerHeight) {
-          top = rect.top - popoverHeight - spacing;
+            let top = newRect.bottom + spacing;
+            if (top + popoverHeight > window.innerHeight) {
+                top = newRect.top - popoverHeight - spacing;
+            }
+
+            let left = newRect.left + newRect.width / 2;
+            const minLeft = (popoverWidth / 2) + 8;
+            const maxLeft = window.innerWidth - (popoverWidth / 2) - 8;
+            left = Math.max(minLeft, Math.min(left, maxLeft));
+
+            setPopoverStyle({
+                top: `${top}px`,
+                left: `${left}px`,
+                transform: 'translateX(-50%)',
+            });
         }
+        setIsVisible(true);
+    };
 
-        // Horizontal positioning (center aligned with transform)
-        let left = rect.left + rect.width / 2;
+    const findAndSetTarget = () => {
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        const rect = targetElement.getBoundingClientRect();
+        const isVerticallyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
 
-        // Clamp left position to stay within viewport bounds
-        const minLeft = (popoverWidth / 2) + 8;
-        const maxLeft = window.innerWidth - (popoverWidth / 2) - 8;
-        left = Math.max(minLeft, Math.min(left, maxLeft));
-
-        setPopoverStyle({
-          top: `${top}px`,
-          left: `${left}px`,
-          transform: 'translateX(-50%)',
-          opacity: 1,
-        });
+        if (!isVerticallyVisible) {
+          setIsVisible(false);
+          targetElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+          scrollTimeout = setTimeout(() => positionUI(targetElement), 500);
+        } else {
+          positionUI(targetElement);
+        }
       } else {
-         setHighlightBox(null);
+        setIsVisible(false);
       }
     };
-    
-    // Initial calculation might fail if target isn't rendered, so we try a few times.
-    const tryCalculate = (retries = 3, delay = 100) => {
-        calculatePosition();
-        const targetElement = document.getElementById(targetId);
-        if (!targetElement && retries > 0) {
-            setTimeout(() => tryCalculate(retries - 1, delay), delay);
-        }
+
+    if (targetId !== lastTargetId.current) {
+        setIsVisible(false);
+        lastTargetId.current = targetId;
     }
+
+    const startObserving = () => {
+        observer = new MutationObserver(() => {
+            animationFrameId = requestAnimationFrame(findAndSetTarget);
+        });
+        findAndSetTarget();
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    };
     
-    tryCalculate();
+    const initTimeout = setTimeout(startObserving, 50);
     
-    window.addEventListener('resize', calculatePosition);
-    window.addEventListener('scroll', calculatePosition, true);
+    const handleReposition = () => findAndSetTarget();
+    window.addEventListener('resize', handleReposition);
+    window.addEventListener('scroll', handleReposition, true);
 
     return () => {
-      window.removeEventListener('resize', calculatePosition);
-      window.removeEventListener('scroll', calculatePosition, true);
+      clearTimeout(initTimeout);
+      clearTimeout(scrollTimeout);
+      if (observer) observer.disconnect();
+      window.removeEventListener('resize', handleReposition);
+      window.removeEventListener('scroll', handleReposition, true);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, [targetId]);
 
-  if (!highlightBox) {
-    return null;
-  }
+  const highlightStyle: React.CSSProperties = highlightBox
+    ? {
+        left: `${highlightBox.left - 4}px`,
+        top: `${highlightBox.top - 4}px`,
+        width: `${highlightBox.width + 8}px`,
+        height: `${highlightBox.height + 8}px`,
+        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
+        borderRadius: '12px',
+        opacity: isVisible ? 1 : 0,
+        pointerEvents: 'auto',
+      }
+    : { opacity: 0 };
+    
+  const finalPopoverStyle: React.CSSProperties = {
+      ...popoverStyle,
+      opacity: isVisible ? 1 : 0,
+      transform: isVisible ? `${popoverStyle.transform} scale(1)` : `${popoverStyle.transform} scale(0.95)`,
+  };
+
+  const showNextButton = advancesBy === 'next' || step === totalSteps - 1;
 
   return (
     <div className="fixed inset-0 z-[9998] pointer-events-none">
-      {/* Spotlight effect */}
+      {/* Spotlight overlay */}
       <div
-        className="fixed transition-all duration-300 ease-in-out pointer-events-auto"
-        style={{
-          left: `${highlightBox.left - 4}px`,
-          top: `${highlightBox.top - 4}px`,
-          width: `${highlightBox.width + 8}px`,
-          height: `${highlightBox.height + 8}px`,
-          boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
-          borderRadius: '12px',
-        }}
-        onClick={(e) => {
-            // Allow click-through on all interactive steps (all except the first one).
-            if (step > 0) {
-              e.stopPropagation();
-            } else {
-              // Block click-through on purely informational steps.
-              e.preventDefault();
-              e.stopPropagation();
-            }
-        }}
+        className="fixed transition-all duration-300 ease-in-out"
+        style={highlightStyle}
       ></div>
 
       {/* Popover */}
       <div
         ref={popoverRef}
-        className="fixed bg-[#FBF6E9] rounded-2xl p-4 shadow-xl max-w-sm w-[calc(100%-2rem)] animate-fade-in border-4 border-double border-amber-800/70 pointer-events-auto transition-opacity duration-300"
-        style={popoverStyle}
+        className="fixed bg-[#FBF6E9] rounded-2xl p-4 shadow-xl max-w-sm w-[calc(100%-2rem)] border-4 border-double border-amber-800/70 pointer-events-auto transition-all duration-300 ease-in-out"
+        style={finalPopoverStyle}
       >
         <div className="flex items-start gap-3">
           <div className="text-4xl flex-shrink-0">🧞‍♂️</div>
@@ -139,16 +167,14 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
           <button onClick={onSkip} className="text-xs text-secondary hover:underline">Skip Tutorial</button>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-amber-800">{step + 1} / {totalSteps}</span>
-            <button onClick={onNext} className="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-amber-600">
-              {step === totalSteps - 1 ? "Finish" : "Next"}
-            </button>
+            {showNextButton && (
+                 <button onClick={onNext} className="bg-amber-500 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-amber-600">
+                    {step === totalSteps - 1 ? "Finish" : "Next"}
+                </button>
+            )}
           </div>
         </div>
       </div>
-       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95) translateX(-50%); } to { opacity: 1; transform: scale(1) translateX(-50%); } }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-       `}</style>
     </div>
   );
 };
