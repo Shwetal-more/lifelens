@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, type GenerateContentResponse, type Chat, Type } from "@google/genai"
 import type { Expense, MoodType, MoodEntry, FinancialGoal, UserProfile, Quest, DecisionChoice } from "../types"
 
@@ -21,19 +22,40 @@ const currencySymbols: { [key: string]: string } = {
 };
 
 
-export const getExpenseAdvice = async (expense: Omit<Expense, "id" | "date">): Promise<string> => {
+export const getEmotionalSpendingInsight = async (
+  currentExpense: Omit<Expense, "id" | "date">,
+  allExpenses: Expense[],
+): Promise<string> => {
   try {
-    const prompt = `A user just logged an expense of $${expense.amount} for '${expense.category}' while feeling '${expense.emotion}'. Give them a fun, quirky, and short (under 20 words) piece of advice or a thought-provoking question. Frame it as a friendly tip from "Your LifeLens Guide". Example: "Whoa, nice! Will this bring you joy next week too?"`
+    // Find past instances of spending in the same category with the same mood.
+    const patternCount = allExpenses.filter(
+      (exp) => exp.category === currentExpense.category && exp.emotion === currentExpense.emotion,
+    ).length;
+
+    let prompt: string;
+
+    if (patternCount > 1) {
+      // If a pattern is detected, generate a more insightful prompt.
+      prompt = `A user just logged an expense for '${currentExpense.category}' while feeling '${
+        currentExpense.emotion
+      }'. This is the ${
+        patternCount + 1
+      }th time they've done this. Analyze this emotional spending pattern. Provide a gentle, non-judgmental, and short (under 25 words) reflective insight or question. The goal is to encourage self-awareness without making them feel guilty. Example: "This seems to be a go-to for comfort. What is this purchase really providing you today?"`;
+    } else {
+      // If it's a new combination, provide a more general but still relevant tip.
+      prompt = `A user just logged an expense for '${currentExpense.category}' while feeling '${currentExpense.emotion}'. Give them a fun, quirky, and short (under 20 words) piece of advice or a thought-provoking question related to this specific combination. Frame it as a friendly tip from "Your LifeLens Guide". Example: "A little retail therapy? Hope it brings a smile!"`;
+    }
+
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
-    })
-    return cleanText(response.text)
+    });
+    return cleanText(response.text);
   } catch (error) {
-    console.error("Error getting expense advice:", error)
-    return "Could not generate advice at this time."
+    console.error("Error getting emotional spending insight:", error);
+    return "Every entry helps you learn. Keep going!";
   }
-}
+};
 
 export const getMoodTip = async (mood: MoodType): Promise<string> => {
   try {

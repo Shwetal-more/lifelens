@@ -1,8 +1,9 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { Expense, MoodType, UserProfile, FinancialGoal, NotificationType } from '../types';
-import { getExpenseAdvice, getMindfulSpendingPrompt, getPostPurchaseReassurance } from '../services/geminiService';
+import { getEmotionalSpendingInsight, getMindfulSpendingPrompt, getPostPurchaseReassurance } from '../services/geminiService';
 
 interface AddExpenseScreenProps {
   userProfile: UserProfile | null;
@@ -10,6 +11,7 @@ interface AddExpenseScreenProps {
   onCancel: () => void;
   onDelete: (id: string) => void;
   expenseToEdit?: Expense | null;
+  expenses: Expense[];
   goals: FinancialGoal[];
   addNotification: (message: string, type: NotificationType) => void;
   pendingData?: { amount: string, category: string } | null;
@@ -25,7 +27,7 @@ const currencySymbols: { [key: string]: string } = {
 };
 
 
-const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, goals, addNotification, pendingData, onClearPendingData }) => {
+const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, expenses, goals, addNotification, pendingData, onClearPendingData }) => {
   const isEditMode = !!expenseToEdit;
   const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
 
@@ -83,7 +85,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     }
 
     setIsLoading(true);
-    const advice = await getExpenseAdvice(expenseData);
+    const advice = await getEmotionalSpendingInsight(expenseData, expenses);
     setAiAdvice(advice);
     setIsLoading(false);
 
@@ -139,8 +141,9 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       
       {aiAdvice ? (
         <div className="flex flex-col items-center justify-center h-64 text-center">
-            <p className="text-secondary mb-2">Your LifeLens Guide says:</p>
-            <p className="text-2xl font-semibold text-primary italic">"{aiAdvice}"</p>
+            <h2 className="text-xl font-bold text-primary mb-4">A Mindful Moment</h2>
+            <p className="text-secondary mb-2">Here's a reflection on your entry:</p>
+            <p className="text-2xl font-semibold text-primary italic bg-background p-4 rounded-xl">"{aiAdvice}"</p>
             <p className="text-sm text-secondary mt-6 animate-pulse">Saving your expense...</p>
         </div>
       ) : (
