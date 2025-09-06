@@ -27,6 +27,7 @@ import SmsImportScreen from './screens/SmsImportScreen';
 import { usePersistentState } from './hooks/usePersistentState';
 import { sendNotification } from './services/notificationService';
 import TutorialHighlight from './components/TutorialHighlight';
+import { auth } from './services/firebase';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -72,26 +73,26 @@ const getInitialRevealedCells = () => {
 
 const appTutorialConfig = [
     // --- HOME SCREEN ---
-    { targetId: 'tutorial-welcome-header', screen: Screen.Home, title: "Welcome to LifeLens!", text: "I'm Kai, your personal guide. Let me show you around your new dashboard for financial and emotional wellness." },
-    { targetId: 'tutorial-summary-card', screen: Screen.Home, title: "Your 7-Day Summary", text: "This card gives you a quick overview of your recent income, expenses, and savings. It's your financial pulse." },
-    { targetId: 'tutorial-aevum-vault-card', screen: Screen.Home, title: "The Aevum Vault", text: "This is a special feature where you can seal goals with a message to your future self, unlocking it only when you succeed." },
-    { targetId: 'tutorial-log-activity-grid', screen: Screen.Home, title: "Log Your Activities", text: "The heart of LifeLens is here. Use these buttons to log expenses, income, and moods. Consistency unlocks powerful insights!" },
-    { targetId: 'tutorial-ai-chat-button', screen: Screen.Home, title: "Chat With Me!", text: "Have a question or need advice? Tap my icon anytime to chat. I'm here to help you on your journey." },
+    { targetId: 'tutorial-welcome-header', screen: Screen.Home, title: "Welcome to LifeLens!", text: "I'm Kai, your personal guide. Let me show you around your new dashboard for financial and emotional wellness.", advancesBy: 'next' as const },
+    { targetId: 'tutorial-summary-card', screen: Screen.Home, title: "Your 7-Day Summary", text: "This card gives you a quick overview of your recent income, expenses, and savings. It's your financial pulse.", advancesBy: 'next' as const },
+    { targetId: 'tutorial-aevum-vault-card', screen: Screen.Home, title: "The Aevum Vault", text: "This is a special feature where you can seal goals with a message to your future self, unlocking it only when you succeed.", advancesBy: 'next' as const },
+    { targetId: 'tutorial-log-activity-grid', screen: Screen.Home, title: "Log Your Activities", text: "The heart of LifeLens is here. Use these buttons to log expenses, income, and moods. Consistency unlocks powerful insights!", advancesBy: 'next' as const },
+    { targetId: 'tutorial-ai-chat-button', screen: Screen.Home, title: "Chat With Me!", text: "Have a question or need advice? Tap my icon anytime to chat. I'm here to help you on your journey.", advancesBy: 'next' as const },
     
     // --- TRANSITION TO COMPASS ---
-    { targetId: 'tutorial-nav-compass', screen: Screen.Home, title: "Discover Your Compass", text: "Now, let's explore your Inner Compass. This is where the magic happens. Tap the Compass icon to continue." },
+    { targetId: 'tutorial-nav-compass', screen: Screen.Home, title: "Discover Your Compass", text: "Now, let's explore your Inner Compass. This is where the magic happens. Tap the Compass icon to continue.", advancesBy: 'action' as const },
     
     // --- INNER COMPASS SCREEN ---
-    { targetId: 'tutorial-compass-header', screen: Screen.InnerCompass, title: "Map Your Inner World", text: "This screen helps you understand the connection between your feelings and your spending habits." },
-    { targetId: 'tutorial-mood-tracker', screen: Screen.InnerCompass, title: "Track Your Mood", text: "Start by logging how you feel. Over time, you'll see how your emotions influence your financial choices." },
-    { targetId: 'tutorial-secret-pattern', screen: Screen.InnerCompass, title: "Unlock Secret Patterns", text: "As you add more data, I'll analyze it and reveal interesting patterns about your habits right here." },
-    { targetId: 'tutorial-charts-container', screen: Screen.InnerCompass, title: "Visualize Your Journey", text: "These charts give you a visual story of your moods and spending over time. Use the filters to explore your data." },
+    { targetId: 'tutorial-compass-header', screen: Screen.InnerCompass, title: "Map Your Inner World", text: "This screen helps you understand the connection between your feelings and your spending habits.", advancesBy: 'next' as const },
+    { targetId: 'tutorial-mood-tracker', screen: Screen.InnerCompass, title: "Track Your Mood", text: "Start by logging how you feel. Over time, you'll see how your emotions influence your financial choices.", advancesBy: 'next' as const },
+    { targetId: 'tutorial-secret-pattern', screen: Screen.InnerCompass, title: "Unlock Secret Patterns", text: "As you add more data, I'll analyze it and reveal interesting patterns about your habits right here.", advancesBy: 'next' as const },
+    { targetId: 'tutorial-charts-container', screen: Screen.InnerCompass, title: "Visualize Your Journey", text: "This chart gives you a visual story of your moods and spending over time. Use the filters to explore your data.", advancesBy: 'next' as const },
 
     // --- TRANSITION TO GAME ---
-    { targetId: 'tutorial-nav-island', screen: Screen.InnerCompass, title: "Your Financial Legacy", text: "Finally, let's visit your island. Your real-world financial journey powers a game where you build a legacy. Tap the Island icon!" },
+    { targetId: 'tutorial-nav-island', screen: Screen.InnerCompass, title: "Your Financial Legacy", text: "Finally, let's visit your island. Your real-world financial journey powers a game where you build a legacy. Tap the Island icon!", advancesBy: 'action' as const },
     
     // --- HAND-OFF TO GAME ---
-    { targetId: 'pirates-legacy-header', screen: Screen.Game, title: "Welcome to Your Island!", text: "Every saving and goal you achieve helps you build your paradise. A more detailed game tutorial will now begin. This concludes the main app tour. Enjoy!" },
+    { targetId: 'pirates-legacy-header', screen: Screen.Game, title: "Welcome to Your Island!", text: "Every saving and goal you achieve helps you build your paradise. A more detailed game tutorial will now begin. This concludes the main app tour. Enjoy!", advancesBy: 'next' as const },
 ];
 
 
@@ -527,8 +528,15 @@ const App: React.FC = () => {
   };
   
   const handleLogout = () => {
-    localStorage.clear();
-    window.location.reload();
+    auth.signOut().then(() => {
+        localStorage.clear();
+        window.location.reload();
+    }).catch((error) => {
+        console.error("Logout Error:", error);
+        // Fallback to clear local data even if Firebase signout fails
+        localStorage.clear();
+        window.location.reload();
+    });
   };
 
   const totalSaved = useMemo(() => goals.reduce((sum, g) => sum + g.savedAmount, 0), [goals]);
@@ -605,20 +613,28 @@ const App: React.FC = () => {
     speechService.cancel();
   };
 
-  const handleAppTutorialNext = () => {
-    const nextStepIndex = appTutorialState.step + 1;
+  const handleAppTutorialNext = useCallback(() => {
+    setAppTutorialState(prev => {
+      const nextStepIndex = prev.step + 1;
+      if (nextStepIndex >= appTutorialConfig.length) {
+        handleAppTutorialSkip();
+        return prev;
+      }
+      return { ...prev, step: nextStepIndex };
+    });
+  }, []);
+  
+  const handleNavigation = (screen: Screen) => {
+    if (appTutorialState.isActive) {
+        const currentStepConfig = appTutorialConfig[appTutorialState.step];
+        const nextStepConfig = appTutorialConfig[appTutorialState.step + 1];
 
-    if (nextStepIndex >= appTutorialConfig.length) {
-      handleAppTutorialSkip();
-      return;
+        // Check if this navigation is the action the tutorial is waiting for
+        if (currentStepConfig.advancesBy === 'action' && nextStepConfig && nextStepConfig.screen === screen) {
+            handleAppTutorialNext();
+        }
     }
-
-    const nextStep = appTutorialConfig[nextStepIndex];
-    if (nextStep.screen && nextStep.screen !== currentScreen) {
-      setCurrentScreen(nextStep.screen);
-    }
-    
-    setAppTutorialState(prev => ({ ...prev, step: nextStepIndex }));
+    setCurrentScreen(screen);
   };
   
   // --- Screen Rendering ---
@@ -690,6 +706,7 @@ const App: React.FC = () => {
                 onNext={handleAppTutorialNext}
                 onSkip={handleAppTutorialSkip}
                 isVoiceOverEnabled={gameState.isVoiceOverEnabled ?? true}
+                advancesBy={appTutorialConfig[appTutorialState.step].advancesBy}
             />
         )}
        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm px-4 space-y-2">
@@ -717,7 +734,7 @@ const App: React.FC = () => {
         <main className="flex-grow overflow-y-auto pb-24">
           {renderScreen()}
         </main>
-        {showBottomNav && <BottomNav activeScreen={currentScreen} onNavigate={setCurrentScreen} />}
+        {showBottomNav && <BottomNav activeScreen={currentScreen} onNavigate={handleNavigation} />}
       </div>
     </div>
   );

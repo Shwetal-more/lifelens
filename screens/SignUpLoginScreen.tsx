@@ -1,6 +1,6 @@
-
-
 import React, { useState } from 'react';
+import firebase from 'firebase/compat/app';
+import { auth } from '../services/firebase';
 
 interface SignUpLoginScreenProps {
   onAuthSuccess: (authData: { name: string; email?: string, phone?: string }) => void;
@@ -31,11 +31,25 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
     }, 500);
   };
 
-  const handleGoogleSignIn = () => {
-    simulateLogin({
-        name: 'Demo User',
-        email: 'demo.user@google.com'
-    });
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError('');
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+        if (user) {
+            onAuthSuccess({
+                name: user.displayName || 'Google User',
+                email: user.email || undefined,
+            });
+        }
+    } catch (error: any) {
+        console.error("Google Sign-In Error:", error);
+        setError(error.message || 'Failed to sign in with Google. Please try again.');
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const handleGuestSignIn = () => {
@@ -98,6 +112,8 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
       <div className="w-full max-w-sm text-center">
         <h1 className="text-3xl font-bold text-primary mb-2">Welcome Back</h1>
         <p className="text-secondary mb-10">Your journey to wellness continues.</p>
+        
+        {error && <p className="text-red-500 text-sm text-center mb-4 bg-red-100 p-3 rounded-lg">{error}</p>}
         
         <div className="space-y-4">
             {!authMethod ? (

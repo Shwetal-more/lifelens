@@ -130,7 +130,7 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
         boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
         borderRadius: '12px',
         opacity: isVisible ? 1 : 0,
-        pointerEvents: 'auto',
+        pointerEvents: 'none', // Allow clicks to pass through to the element underneath
       }
     : { opacity: 0 };
     
@@ -140,7 +140,7 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
       transform: isVisible ? `${popoverStyle.transform} scale(1)` : `${popoverStyle.transform} scale(0.95)`,
   };
 
-  const showNextButton = advancesBy === 'next' || step === totalSteps - 1;
+  const showNextButton = advancesBy === 'next';
 
   return (
     <div className="fixed inset-0 z-[9998] pointer-events-none">
