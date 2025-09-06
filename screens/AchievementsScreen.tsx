@@ -10,7 +10,7 @@ const AchievementsScreen: React.FC<AchievementsScreenProps> = ({ badges, onBack 
   return (
     <div className="p-4 pt-8">
       <div className="flex items-center mb-8 relative justify-center">
-        <button onClick={onBack} className="absolute left-0 text-primary bg-card p-2 rounded-full shadow-card">
+        <button onClick={onBack} className="absolute left-0 text-primary bg-card p-2 rounded-full shadow-card" aria-label="Go back">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>

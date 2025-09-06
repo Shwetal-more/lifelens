@@ -291,7 +291,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
                   </div>
                   <div className="flex items-center space-x-4">
                     <p className="font-bold text-lg text-primary">{currencySymbol}{expense.amount.toFixed(2)}</p>
-                    <button onClick={() => onEditExpense(expense.id)} className="text-secondary hover:text-primary">
+                    <button onClick={() => onEditExpense(expense.id)} className="text-secondary hover:text-primary" aria-label={`Edit expense for ${expense.category}`}>
                         <EditIcon className="w-5 h-5"/>
                     </button>
                   </div>
