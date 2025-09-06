@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface SignUpLoginScreenProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (authData: { name: string; email?: string, phone?: string }) => void;
 }
 
 const GoogleIcon = () => (
@@ -18,17 +18,51 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
   const [phoneStep, setPhoneStep] = useState<'number' | 'otp'>('number');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleGoogleSignIn = () => {
+    setIsLoading(true);
+    setError('');
+    setTimeout(() => {
+      onAuthSuccess({ name: 'Alex Johnson', email: 'alex.j@example.com' });
+    }, 1500);
+  };
 
   const handlePhoneSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      if (phoneStep === 'number' && phoneNumber.trim().length > 8) {
-          setPhoneStep('otp');
-      } else if (phoneStep === 'otp' && otp === '123456') { // Demo OTP
-          onAuthSuccess();
-      } else if (phoneStep === 'otp') {
-          alert("Invalid OTP. Please enter 123456 for this demo.");
+      setError('');
+
+      if (phoneStep === 'number') {
+          if (phoneNumber.trim().length > 8) {
+              setIsLoading(true);
+              setTimeout(() => {
+                setPhoneStep('otp');
+                setIsLoading(false);
+              }, 1000);
+          } else {
+              setError('Please enter a valid phone number.');
+          }
+      } else { // phoneStep === 'otp'
+          if (otp === '123456') {
+              setIsLoading(true);
+              setTimeout(() => {
+                onAuthSuccess({ name: 'Valued User', phone: phoneNumber });
+              }, 1000);
+          } else {
+              setError("Invalid OTP. For the demo, please use 123456.");
+          }
       }
   };
+
+  const handleEmailLogin = () => {
+    setIsLoading(true);
+    setError('');
+    setTimeout(() => {
+      onAuthSuccess({ name: 'Demo User', email: 'demo@lifelens.app' });
+    }, 1500);
+  };
+
 
   const renderPhoneAuth = () => (
     <form onSubmit={handlePhoneSubmit} className="space-y-4">
@@ -40,7 +74,11 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
                     placeholder="+1 (555) 123-4567"
                     className="w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => {
+                        setPhoneNumber(e.target.value);
+                        if (error) setError('');
+                    }}
+                    disabled={isLoading}
                 />
             </div>
         ) : (
@@ -51,15 +89,21 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
                     placeholder="123456"
                     className="w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) => {
+                        setOtp(e.target.value);
+                        if (error) setError('');
+                    }}
+                    disabled={isLoading}
+                    autoComplete="one-time-code"
                 />
                 <p className="text-xs text-secondary mt-2 text-center">A code was sent to {phoneNumber}. (Hint: it's 123456)</p>
             </div>
         )}
-        <button type="submit" className="w-full bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-primary/90">
-            {phoneStep === 'number' ? 'Send Code' : 'Verify'}
+        {error && <p className="text-red-500 text-sm text-center -mb-2">{error}</p>}
+        <button type="submit" disabled={isLoading} className="w-full bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-primary/90 disabled:bg-primary/70">
+            {isLoading ? '...' : (phoneStep === 'number' ? 'Send Code' : 'Verify')}
         </button>
-        <button onClick={() => setAuthMethod(null)} className="w-full text-sm text-secondary font-semibold">Back</button>
+        <button onClick={() => { setAuthMethod(null); setError(''); }} disabled={isLoading} className="w-full text-sm text-secondary font-semibold">Back</button>
     </form>
   );
 
@@ -70,25 +114,33 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
             placeholder="Email"
             className="w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none"
             defaultValue="demo@lifelens.app"
+            disabled={isLoading}
           />
           <input
             type="password"
             placeholder="Password"
             className="w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none"
             defaultValue="password"
+            disabled={isLoading}
           />
           <button
-            onClick={onAuthSuccess}
-            className="w-full bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-primary/90"
+            onClick={handleEmailLogin}
+            disabled={isLoading}
+            className="w-full bg-primary text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-primary/90 disabled:bg-primary/70"
           >
-            Login / Sign Up
+            {isLoading ? '...' : 'Login / Sign Up'}
           </button>
-          <button onClick={() => setAuthMethod(null)} className="w-full text-sm text-secondary font-semibold">Back</button>
+          <button onClick={() => { setAuthMethod(null); setError(''); }} disabled={isLoading} className="w-full text-sm text-secondary font-semibold">Back</button>
       </div>
   );
 
   return (
-    <div className="h-full flex flex-col justify-center items-center p-6 bg-background">
+    <div className="h-full flex flex-col justify-center items-center p-6 bg-background relative">
+       {isLoading && (
+        <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+        )}
       <div className="w-full max-w-sm text-center">
         <h1 className="text-3xl font-bold text-primary mb-2">Welcome Back</h1>
         <p className="text-secondary mb-10">Your journey to wellness continues.</p>
@@ -96,11 +148,11 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
         <div className="space-y-4">
             {!authMethod ? (
                  <div className="space-y-4">
-                    <button onClick={onAuthSuccess} className="w-full flex items-center justify-center gap-3 bg-white text-primary font-bold py-3 px-4 rounded-xl shadow-card hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                    <button onClick={handleGoogleSignIn} disabled={isLoading} className="w-full flex items-center justify-center gap-3 bg-white text-primary font-bold py-3 px-4 rounded-xl shadow-card hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:transform-none">
                         <GoogleIcon />
                         Sign in with Google
                     </button>
-                    <button onClick={() => setAuthMethod('phone')} className="w-full bg-card text-primary font-bold py-3 px-4 rounded-xl shadow-card hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                    <button onClick={() => setAuthMethod('phone')} disabled={isLoading} className="w-full bg-card text-primary font-bold py-3 px-4 rounded-xl shadow-card hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:transform-none">
                         Sign in with Phone
                     </button>
                      <div className="relative flex py-3 items-center">
@@ -108,7 +160,7 @@ const SignUpLoginScreen: React.FC<SignUpLoginScreenProps> = ({ onAuthSuccess }) 
                         <span className="flex-shrink mx-4 text-xs text-secondary">OR</span>
                         <div className="flex-grow border-t border-gray-200"></div>
                     </div>
-                    <button onClick={() => setAuthMethod('email')} className="w-full bg-card text-primary font-bold py-3 px-4 rounded-xl shadow-card hover:shadow-lg transform hover:-translate-y-0.5 transition-all">
+                    <button onClick={() => setAuthMethod('email')} disabled={isLoading} className="w-full bg-card text-primary font-bold py-3 px-4 rounded-xl shadow-card hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:transform-none">
                         Continue with Email
                     </button>
                 </div>

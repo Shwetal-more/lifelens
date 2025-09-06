@@ -189,14 +189,31 @@ export const getWeeklySmsInsight = async (
     return `Hi ${userName}! Start logging your expenses and moods this week to get your first LifeLens SMS roundup. Stay mindful!`
   }
   try {
-    const expenseSummary = expenses.map((e) => `${e.category}: ${currencySymbol}${e.amount}`).join(", ")
-    const moodSummary = Array.from(new Set(moods.map((m) => m.mood))).join(", ")
+    // Summarize expenses by category to reduce prompt length and improve stability
+    const expensesByCategory = expenses.reduce((acc, e) => {
+        acc[e.category] = (acc[e.category] || 0) + e.amount;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const expenseSummary = Object.entries(expensesByCategory)
+        .map(([cat, total]) => `${cat}: ${currencySymbol}${total.toFixed(2)}`)
+        .join(', ');
+    
+    // Summarize moods by count for more detailed context
+    const moodCounts = moods.reduce((acc, m) => {
+        acc[m.mood] = (acc[m.mood] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const moodSummary = Object.entries(moodCounts)
+        .map(([mood, count]) => `${mood} (${count}x)`)
+        .join(', ');
 
     const prompt = `Generate a concise, friendly, and insightful weekly summary message for a user named ${userName}, as if it were an SMS. The message should be under 40 words.
     Data from last 7 days:
-    - Expenses: ${expenseSummary || "None logged."}
-    - Moods felt: ${moodSummary || "None logged."}
-    Summarize their week's spending and mood trend in a positive and encouraging tone. Highlight one interesting connection if possible.`
+    - Expense Totals by Category: ${expenseSummary || "None logged."}
+    - Moods Logged: ${moodSummary || "None logged."}
+    Summarize their week's spending and mood trend in a positive and encouraging tone. Highlight one interesting connection if possible, like if high spending on "Shopping" correlates with "Stressed" moods.`
 
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -261,7 +278,7 @@ export const getPirateRiddle = async (
         ? unusedTopics[Math.floor(Math.random() * unusedTopics.length)]
         : riddleTopics[Math.floor(Math.random() * riddleTopics.length)]
 
-    const prompt = `Generate a unique, short pirate-themed riddle about "${selectedTopic}". The riddle should be different from these previously used ones: ${usedRiddles.join(", ")}. The answer should be a single word related to the financial concept. Also provide two plausible but incorrect answers. Make it fun and educational!`
+    const prompt = `Create a unique, clever, interesting, and short pirate-themed riddle about the financial concept of "${selectedTopic}". The riddle should subtly explain what the concept is and how it's useful. The tone should be adventurous and educational. Keep the riddle under 25 words. Make it different from these previously used ones: ${usedRiddles.join(", ")}. The answer should be a single word or a short two-word phrase. Also provide two plausible but incorrect answers.`
 
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -277,7 +294,7 @@ export const getPirateRiddle = async (
             },
             answer: {
               type: Type.STRING,
-              description: "The single-word answer to the riddle.",
+              description: "The single-word or short-phrase answer to the riddle.",
             },
             options: {
               type: Type.ARRAY,
@@ -435,6 +452,20 @@ export const getGameIntroStory = async (userName: string): Promise<string> => {
   } catch (error) {
     console.error("Error getting game intro story:", error)
     return `Ahoy, Captain ${userName}! Welcome to a land of untold riches and mystery. This island... it responds to yer real-world fortunes! The wiser ye are with yer coin in yer world, the more Doubloons ye'll have to spend here. Build a legacy, and uncover the ultimate treasure!`
+  }
+}
+
+export const getWordHint = async (word: string): Promise<string> => {
+  try {
+    const prompt = `Generate a short, clever, pirate-themed hint for the financial term "${word}". The hint should guide the player without giving away the answer. Keep it under 15 words. Example for "BUDGET": "A captain's map for where the doubloons go."`
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    })
+    return cleanText(response.text)
+  } catch (error) {
+    console.error("Error getting word hint:", error)
+    return "The winds ain't talkin' right now..."
   }
 }
 

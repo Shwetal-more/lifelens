@@ -19,6 +19,7 @@ export enum Screen {
   Chat = 'CHAT',
   SpendingCheck = 'SPENDING_CHECK',
   PrivacyPolicy = 'PRIVACY_POLICY',
+  SmsImport = 'SMS_IMPORT',
 }
 
 export enum MoodType {
@@ -49,6 +50,8 @@ export interface UserProfile {
   age: number;
   currency: 'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY';
   smsEnabled: boolean;
+  email?: string;
+  phone?: string;
 }
 
 export interface Expense {
@@ -188,6 +191,7 @@ export interface GameState {
       hangman?: {
           guessedLetters: string[];
           wrongGuesses: number;
+          hintUsed?: boolean;
       }
   } | null;
 }

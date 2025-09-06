@@ -1,9 +1,8 @@
-
 "use client"
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
-import type { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData } from "../types"
-import { getPirateRiddle, getFinancialQuest, getGameIntroStory } from "../services/geminiService"
+import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType } from "../types"
+import { getPirateRiddle, getFinancialQuest, getGameIntroStory, getWordHint } from "../services/geminiService"
 import { speechService } from "../services/speechService"
 import {
   SeaTile,
@@ -17,6 +16,7 @@ import {
   LighthouseTile,
   ShipwreckTile,
 } from "../components/MapTiles"
+import { usePersistentState } from "../hooks/usePersistentState";
 
 // --- ICONS ---
 const DoubloonIcon = () => (
@@ -277,11 +277,11 @@ const Modal: React.FC<{ isOpen: boolean; onClose: () => void; children: React.Re
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-amber-50 rounded-2xl p-4 shadow-xl max-w-md w-full animate-fade-in border-4 border-amber-800/50"
+        className="bg-[#FBF6E9] rounded-2xl p-4 shadow-xl max-w-md w-full animate-fade-in border-8 border-double border-amber-800/70"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-primary" style={{ fontFamily: "serif" }}>
+          <h2 className="text-2xl font-bold text-amber-900" style={{ fontFamily: "'IM Fell English SC', serif" }}>
             {title}
           </h2>
           <button onClick={onClose} className="font-bold text-2xl text-secondary">
@@ -297,6 +297,29 @@ const Modal: React.FC<{ isOpen: boolean; onClose: () => void; children: React.Re
     </div>
   )
 }
+
+const HangmanFigure = ({ wrongGuesses }: { wrongGuesses: number }) => (
+    <svg viewBox="0 0 100 120" className="w-32 h-40 mx-auto stroke-amber-900" strokeWidth="4" fill="none">
+        {/* Stand */}
+        <line x1="10" y1="110" x2="90" y2="110" />
+        <line x1="30" y1="110" x2="30" y2="10" />
+        <line x1="28" y1="10" x2="70" y2="10" />
+        <line x1="70" y1="10" x2="70" y2="25" />
+        {/* Head */}
+        {wrongGuesses > 0 && <circle cx="70" cy="35" r="10" strokeWidth="3" />}
+        {/* Body */}
+        {wrongGuesses > 1 && <line x1="70" y1="45" x2="70" y2="75" strokeWidth="3" />}
+        {/* Left Arm */}
+        {wrongGuesses > 2 && <line x1="70" y1="55" x2="55" y2="65" strokeWidth="3" />}
+        {/* Right Arm */}
+        {wrongGuesses > 3 && <line x1="70" y1="55" x2="85" y2="65" strokeWidth="3" />}
+        {/* Left Leg */}
+        {wrongGuesses > 4 && <line x1="70" y1="75" x2="55" y2="90" strokeWidth="3" />}
+        {/* Right Leg */}
+        {wrongGuesses > 5 && <line x1="70" y1="75" x2="85" y2="90" strokeWidth="3" />}
+    </svg>
+);
+
 
 const getTerrainTile = (terrainChar: string) => {
   switch (terrainChar) {
@@ -334,6 +357,26 @@ const getTerrainTile = (terrainChar: string) => {
   }
 }
 
+const getTerrainDescription = (char: string) => {
+    switch (char) {
+        case 'W': return 'Sea';
+        case 'L': return 'Grassland';
+        case 'F': return 'Forest';
+        case 'X': return 'Treasure Marker';
+        case 'H': return 'Shipwreck';
+        case 'D': return 'Deadly Sea';
+        case 'B': return 'Cursed Canopy';
+        case 'E': return 'Emergency Grove';
+        case 'I': return 'Valley of Myths';
+        case 'P': return 'Lake of Lost Souls';
+        case 'G': return 'Lighthouse Point';
+        case 'N': return 'Inflationary Peaks';
+        case 'M': return 'The Means Meadows';
+        case 'S': return 'Savings Falls';
+        default: return 'Land';
+    }
+};
+
 // --- MAIN GAME SCREEN ---
 interface GameScreenProps {
   brixCoins: number
@@ -343,6 +386,7 @@ interface GameScreenProps {
   onPlaceBrix: (brixId: string, x: number, y: number) => void
   onNavigateToChat: (context: "general" | "game") => void
   userName: string
+  addNotification: (message: string, type: NotificationType) => void;
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({
@@ -353,11 +397,13 @@ const GameScreen: React.FC<GameScreenProps> = ({
   onPlaceBrix,
   onNavigateToChat,
   userName,
+  addNotification,
 }) => {
   const [isShopOpen, setIsShopOpen] = useState(false)
   const [isInventoryOpen, setIsInventoryOpen] = useState(false)
   const [isQuestOpen, setIsQuestOpen] = useState(false)
   const [isWorldMapOpen, setIsWorldMapOpen] = useState(false)
+  const [isQuestLogOpen, setIsQuestLogOpen] = useState(false);
   const [placingBrixId, setPlacingBrixId] = useState<string | null>(null)
   const [questFeedback, setQuestFeedback] = useState<string | null>(null)
   const [isGeneratingQuest, setIsGeneratingQuest] = useState(false)
@@ -366,7 +412,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [cooldownTime, setCooldownTime] = useState('');
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
-    content: { name: string; asset: string; tip: string };
+    content: React.ReactNode;
     x: number;
     y: number;
   } | null>(null);
@@ -382,6 +428,15 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [introStory, setIntroStory] = useState("")
   
   const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  
+  // Daily Quest Limit
+  const [dailyQuestData, setDailyQuestData] = usePersistentState<{ date: string; count: number } | null>('dailyQuestData', null);
+  const DAILY_QUEST_LIMIT = 8;
+  
+  // Hangman State
+  const [hint, setHint] = useState<string | null>(null);
+  const [isHintLoading, setIsHintLoading] = useState(false);
+  const HINT_COST = 25;
 
   const currentQuest = useMemo(() => gameState.quests.find((q) => !q.isCompleted), [gameState.quests])
   
@@ -524,10 +579,11 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const handleOpenQuest = (quest: Quest) => {
     if (!quest) return;
     setQuestFeedback(null);
+    setHint(null);
     setIsQuestOpen(true);
 
     if (quest.type === 'hangman' && (!gameState.activeMinigameState || gameState.activeMinigameState.type !== 'hangman')) {
-        onUpdateGameState(gs => ({...gs, activeMinigameState: { type: 'hangman', progress: 0, hangman: { guessedLetters: [], wrongGuesses: 0 }}}));
+        onUpdateGameState(gs => ({...gs, activeMinigameState: { type: 'hangman', progress: 0, hangman: { guessedLetters: [], wrongGuesses: 0, hintUsed: false }}}));
     } else if (quest.type === 'riddle_challenge' && (!gameState.activeMinigameState || gameState.activeMinigameState.type !== 'riddle_challenge')) {
         onUpdateGameState(gs => ({...gs, activeMinigameState: { type: 'riddle_challenge', progress: 0 }}));
     }
@@ -535,6 +591,12 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
 
   const generateNextAIGeneratedQuest = useCallback(async () => {
+    const today = new Date().toDateString();
+    if (dailyQuestData && dailyQuestData.date === today && dailyQuestData.count >= DAILY_QUEST_LIMIT) {
+        addNotification("Ye've had yer fill of adventure for one day, Captain! Come back tomorrow.", 'info');
+        return;
+    }
+
     setIsGeneratingQuest(true);
     const isRiddle = gameState.quests.length % 2 === 0;
     const nextQuestId = `q_ai_${gameState.quests.length + 1}`;
@@ -568,12 +630,18 @@ const GameScreen: React.FC<GameScreenProps> = ({
         ...prevGameState,
         quests: [...prevGameState.quests, newQuestData as Quest],
       }));
+      setDailyQuestData(prev => {
+        if (prev && prev.date === today) {
+            return { ...prev, count: prev.count + 1 };
+        }
+        return { date: today, count: 1 };
+      });
     } catch (error) {
       console.error("Failed to generate quest:", error);
     } finally {
       setIsGeneratingQuest(false);
     }
-  }, [gameState.quests.length, onUpdateGameState, usedRiddles, usedScenarios]);
+  }, [gameState.quests.length, onUpdateGameState, usedRiddles, usedScenarios, dailyQuestData, addNotification]);
 
  useEffect(() => {
     const discoveredLandmarkQuests = new Set(gameState.quests.map(q => q.id));
@@ -690,6 +758,31 @@ const GameScreen: React.FC<GameScreenProps> = ({
     },
     [onUpdateGameState, stopTimer],
   )
+  
+  const handleGetHint = async () => {
+      if (!currentQuest || !gameState.activeMinigameState || gameState.activeMinigameState.type !== 'hangman' || brixCoins < HINT_COST) return;
+      
+      const { progress, hangman } = gameState.activeMinigameState;
+      if (hangman?.hintUsed) return;
+
+      setIsHintLoading(true);
+      const word = currentQuest.data.words![progress];
+      const hintText = await getWordHint(word);
+      setHint(hintText);
+      setIsHintLoading(false);
+
+      onUpdateGameState(gs => ({
+          ...gs,
+          spentBrixCoins: gs.spentBrixCoins + HINT_COST,
+          activeMinigameState: {
+              ...gs.activeMinigameState!,
+              hangman: {
+                  ...gs.activeMinigameState!.hangman!,
+                  hintUsed: true,
+              }
+          }
+      }));
+  }
 
   const handleQuestChoice = (choice: string | DecisionChoice) => {
     if (!currentQuest) return;
@@ -736,10 +829,10 @@ const GameScreen: React.FC<GameScreenProps> = ({
       const { progress, hangman } = gameState.activeMinigameState;
       const word = currentQuest.data.words![progress];
       
-      if (hangman.guessedLetters.includes(letter)) return;
+      if (hangman!.guessedLetters.includes(letter)) return;
 
-      const newGuessedLetters = [...hangman.guessedLetters, letter];
-      let newWrongGuesses = hangman.wrongGuesses;
+      const newGuessedLetters = [...hangman!.guessedLetters, letter];
+      let newWrongGuesses = hangman!.wrongGuesses;
       
       if (!word.includes(letter)) {
           newWrongGuesses++;
@@ -756,7 +849,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
                   completeQuest(currentQuest);
               } else {
                   setQuestFeedback("On to the next word!");
-                  onUpdateGameState(gs => ({...gs, activeMinigameState: { type: 'hangman', progress: nextProgress, hangman: { guessedLetters: [], wrongGuesses: 0 }}}));
+                   setHint(null);
+                  onUpdateGameState(gs => ({...gs, activeMinigameState: { type: 'hangman', progress: nextProgress, hangman: { guessedLetters: [], wrongGuesses: 0, hintUsed: false }}}));
                   // Restart timer for next word
                   setTimerPhase('reading');
                   setTimer(15);
@@ -764,24 +858,43 @@ const GameScreen: React.FC<GameScreenProps> = ({
           }, 1500);
       } else if (newWrongGuesses >= 6) {
           stopTimer();
-          setQuestFeedback(`Ye failed! The word was ${word}. The curse remains... for now.`);
+          setQuestFeedback(`Ye failed! The word was ${word}. That'll cost ye 50 Doubloons!`);
+          onUpdateGameState(gs => ({...gs, spentBrixCoins: gs.spentBrixCoins + 50}));
           setTimeout(() => {
             setIsQuestOpen(false);
-          }, 2000);
+          }, 2500);
       } else {
            onUpdateGameState(gs => ({...gs, activeMinigameState: {...gs.activeMinigameState!, hangman: { guessedLetters: newGuessedLetters, wrongGuesses: newWrongGuesses }}}));
       }
   };
 
-  const handleMouseEnterCell = (e: React.MouseEvent, brixData: BrixComponent | null) => {
-    if (brixData) {
-      setTooltip({
-        visible: true,
-        content: { name: brixData.name, asset: brixData.asset, tip: brixData.financialTip },
-        x: e.clientX,
-        y: e.clientY,
-      });
-    }
+  const handleMouseEnterCell = (e: React.MouseEvent, x: number, y: number) => {
+    const mapIndex = y * MAP_WIDTH + x;
+    const terrain = mapLayout[mapIndex];
+    const isRevealed = gameState.revealedCells.some(cell => cell.x === x && cell.y === y);
+    const placed = gameState.placedBrix.find(b => b.x === x && b.y === y);
+    const brixData = placed ? brixCatalog.find(b => b.id === placed.brixId) : null;
+    const terrainDescription = getTerrainDescription(terrain);
+
+    const content = (
+      <div>
+        <p className="font-bold text-primary">{terrainDescription}</p>
+        <p className="text-sm text-secondary">{isRevealed ? 'Revealed' : 'Foggy'}</p>
+        {brixData && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <p className="font-semibold text-accent-dark">{brixData.name} {brixData.asset}</p>
+            <p className="text-xs text-secondary italic">"{brixData.financialTip}"</p>
+          </div>
+        )}
+      </div>
+    );
+
+    setTooltip({
+      visible: true,
+      content: content,
+      x: e.clientX,
+      y: e.clientY,
+    });
   };
 
   const handleMouseLeaveCell = () => {
@@ -793,17 +906,16 @@ const GameScreen: React.FC<GameScreenProps> = ({
     <div
       className="p-4 pt-6 h-full flex flex-col bg-[#FBF6E9]"
       style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fillOpacity='0.1' fillRule='evenodd'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E")`,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
       }}
     >
       {/* --- MODALS & TOOLTIP --- */}
       {tooltip && tooltip.visible && (
         <div
-          className="fixed bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg z-50 pointer-events-none transition-opacity duration-200"
+          className="fixed bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg z-[60] pointer-events-none transition-opacity duration-200"
           style={{ top: tooltip.y + 10, left: tooltip.x + 10, maxWidth: '200px' }}
         >
-          <p className="font-bold text-primary">{tooltip.content.name} {tooltip.content.asset}</p>
-          <p className="text-sm text-secondary italic">"{tooltip.content.tip}"</p>
+          {tooltip.content}
         </div>
       )}
       
@@ -945,16 +1057,21 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
               {currentQuest.type === 'hangman' && gameState.activeMinigameState?.hangman && (
                   <div className="text-center">
+                      <HangmanFigure wrongGuesses={gameState.activeMinigameState.hangman.wrongGuesses} />
                       <p className="text-sm text-center font-bold">Word {gameState.activeMinigameState.progress + 1} of {currentQuest.data.words!.length}</p>
                       <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center">
                           {currentQuest.data.words![gameState.activeMinigameState.progress].split('').map((char, i) => (
-                              <span key={i} className="inline-block w-8 border-b-4 border-primary">{gameState.activeMinigameState.hangman.guessedLetters.includes(char) ? char : '_'}</span>
+                              <span key={i} className="inline-block w-8 border-b-4 border-primary">{gameState.activeMinigameState!.hangman!.guessedLetters.includes(char) ? char : '_'}</span>
                           ))}
                       </div>
-                      <p>Wrong Guesses: {gameState.activeMinigameState.hangman.wrongGuesses} / 6</p>
+                       {hint && <p className="text-sm text-secondary italic mb-2">Hint: "{hint}"</p>}
+                       <button onClick={handleGetHint} disabled={isHintLoading || gameState.activeMinigameState.hangman.hintUsed || brixCoins < HINT_COST} className="text-sm bg-amber-200 text-amber-800 font-bold py-1 px-3 rounded-full mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {isHintLoading ? "..." : `Get Hint (-${HINT_COST} Doubloons)`}
+                       </button>
+
                       <div className="flex flex-wrap gap-2 justify-center mt-4">
                           {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
-                              <button key={letter} onClick={() => handleHangmanGuess(letter)} disabled={gameState.activeMinigameState.hangman.guessedLetters.includes(letter)}
+                              <button key={letter} onClick={() => handleHangmanGuess(letter)} disabled={gameState.activeMinigameState!.hangman!.guessedLetters.includes(letter)}
                                   className="w-8 h-8 font-bold bg-amber-100 rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-amber-200">
                                   {letter}
                               </button>
@@ -965,6 +1082,36 @@ const GameScreen: React.FC<GameScreenProps> = ({
             </div>
           </div>
         )}
+      </Modal>
+
+       <Modal isOpen={isQuestLogOpen} onClose={() => setIsQuestLogOpen(false)} title="Captain's Log">
+        <div className="max-h-[60vh] overflow-y-auto p-2 space-y-4">
+            <div>
+                <h3 className="font-bold text-amber-900 text-lg mb-2 sticky top-0 bg-[#FBF6E9] py-1">Active Quests</h3>
+                {gameState.quests.filter(q => !q.isCompleted).length > 0 ? (
+                    gameState.quests.filter(q => !q.isCompleted).map(q => (
+                        <div key={q.id} className="mb-2 p-3 bg-amber-100 rounded-lg shadow-sm">
+                            <p className="font-bold text-primary">{q.title}</p>
+                            <p className="text-sm text-secondary italic">"{q.description}"</p>
+                        </div>
+                    ))
+                ) : (
+                    <p className="text-sm text-secondary p-3 bg-amber-50 rounded-lg">No active quests. Time to find a new adventure!</p>
+                )}
+            </div>
+            <div>
+                <h3 className="font-bold text-amber-900 text-lg mb-2 sticky top-0 bg-[#FBF6E9] py-1">Completed Quests</h3>
+                {gameState.quests.filter(q => q.isCompleted).length > 0 ? (
+                    gameState.quests.filter(q => q.isCompleted).map(q => (
+                        <div key={q.id} className="mb-2 p-3 bg-green-100/70 rounded-lg opacity-80">
+                            <p className="font-bold text-green-800 line-through">{q.title}</p>
+                        </div>
+                    ))
+                ) : (
+                     <p className="text-sm text-secondary p-3 bg-amber-50 rounded-lg">No quests completed yet.</p>
+                )}
+            </div>
+        </div>
       </Modal>
 
       <Modal isOpen={isWorldMapOpen} onClose={() => setIsWorldMapOpen(false)} title="Treasure Map">
@@ -989,7 +1136,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
       {/* --- HEADER & ACTIONS --- */}
       <header className="flex justify-between items-center mb-4">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-primary" style={{ fontFamily: "'Palatino', 'serif'" }}>
+          <h1 className="text-3xl font-bold text-amber-900" style={{ fontFamily: "'IM Fell English SC', serif" }}>
             Pirate's Legacy
           </h1>
         </div>
@@ -1012,6 +1159,12 @@ const GameScreen: React.FC<GameScreenProps> = ({
           </div>
           <div className="flex gap-2">
             <button
+              onClick={() => setIsQuestLogOpen(true)}
+              className="bg-amber-800 text-white font-bold py-3 px-4 rounded-xl flex items-center gap-2"
+            >
+              📜 Log
+            </button>
+            <button
               onClick={() => setIsInventoryOpen(true)}
               className="bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-xl flex items-center gap-2"
             >
@@ -1031,13 +1184,14 @@ const GameScreen: React.FC<GameScreenProps> = ({
         <div className="mb-4">
           <button
             onClick={generateNextAIGeneratedQuest}
-            disabled={isGeneratingQuest || !!cooldownTime}
+            disabled={isGeneratingQuest || !!cooldownTime || (dailyQuestData?.count ?? 0) >= DAILY_QUEST_LIMIT}
             className="w-full bg-teal-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
           >
             {isGeneratingQuest
               ? 'Seeking adventure...'
               : cooldownTime
               ? `Next quest in ${cooldownTime}`
+              : (dailyQuestData?.count ?? 0) >= DAILY_QUEST_LIMIT ? `Daily quest limit reached (${DAILY_QUEST_LIMIT}/${DAILY_QUEST_LIMIT})`
               : '📜 Find a Quest'}
           </button>
         </div>
@@ -1055,7 +1209,11 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
       {/* --- GAME MAP QUADRANT --- */}
       <div className="flex-grow flex items-center justify-center relative">
-        <div className="grid grid-cols-10 gap-0 bg-amber-200 rounded-lg shadow-inner aspect-square max-w-full max-h-full border-4 border-amber-800/80 overflow-hidden">
+        <div 
+          role="grid"
+          aria-label="Captain's Island Map Quadrant"
+          className="grid grid-cols-10 gap-0 bg-amber-200 rounded-lg shadow-inner aspect-square max-w-full max-h-full border-4 border-amber-800/80 overflow-hidden"
+        >
           {Array.from({ length: 10 * 10 }).map((_, i) => {
             const viewX = i % 10
             const viewY = Math.floor(i / 10)
@@ -1071,11 +1229,18 @@ const GameScreen: React.FC<GameScreenProps> = ({
             const isOcean = terrain === "W" || terrain === "D"
             const canPlace = isRevealed && isLand && !placed && placingBrixId
 
+            const terrainDescription = getTerrainDescription(terrain);
+            const revealedStatus = isRevealed ? 'Revealed' : 'Foggy';
+            const contentStatus = brixData ? `, contains ${brixData.name}` : '';
+            const cellDescription = `Cell at column ${mapX + 1}, row ${mapY + 1}. Type: ${terrainDescription}, Status: ${revealedStatus}${contentStatus}`;
+
             return (
               <div
                 key={i}
+                role="gridcell"
+                aria-label={cellDescription}
                 onClick={() => handleCellClick(mapX, mapY)}
-                onMouseEnter={(e) => handleMouseEnterCell(e, brixData)}
+                onMouseEnter={(e) => handleMouseEnterCell(e, mapX, mapY)}
                 onMouseLeave={handleMouseLeaveCell}
                 className={`w-full h-full relative transition-all ${
                   canPlace

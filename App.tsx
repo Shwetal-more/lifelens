@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType, Income } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
 import SignUpLoginScreen from './screens/SignUpLoginScreen';
@@ -23,6 +24,9 @@ import { Chat } from '@google/genai';
 import SpendingCheckScreen from './screens/SpendingCheckScreen';
 import PrivacyPolicyScreen from './screens/PrivacyPolicyScreen';
 import { speechService } from './services/speechService';
+import SmsImportScreen from './screens/SmsImportScreen';
+import { usePersistentState } from './hooks/usePersistentState';
+import { sendNotification } from './services/notificationService';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -84,63 +88,64 @@ const NotificationToast: React.FC<{ notification: Notification; onDismiss: () =>
 
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.Welcome);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  const [expenses, setExpenses] = useState<Expense[]>([
+  // --- Persistent State using custom hook ---
+  const [userProfile, setUserProfile] = usePersistentState<UserProfile | null>('userProfile', null);
+  const [expenses, setExpenses] = usePersistentState<Expense[]>('expenses', [
     { id: '1', amount: 75.50, category: 'Food', occasion: 'Dinner with friends', emotion: MoodType.Happy, date: new Date(Date.now() - 86400000 * 2), isUseful: false },
     { id: '2', amount: 120.00, category: 'Shopping', occasion: 'New shoes', emotion: MoodType.Stressed, date: new Date(Date.now() - 86400000 * 1), isUseful: false },
     { id: '3', amount: 15.00, category: 'Transport', occasion: 'Commute', emotion: MoodType.Neutral, date: new Date(), isUseful: true },
     { id: '4', amount: 45.00, category: 'Groceries', occasion: 'Weekly shop', emotion: MoodType.Neutral, date: new Date(), isUseful: true },
   ]);
-  
-  const [income, setIncome] = useState<Income[]>([
+  const [income, setIncome] = usePersistentState<Income[]>('income', [
       { id: 'i1', amount: 3500, source: 'Salary', date: new Date(Date.now() - 86400000 * 15) },
       { id: 'i2', amount: 250, source: 'Freelance', date: new Date(Date.now() - 86400000 * 5) },
   ]);
-
-  const [moods, setMoods] = useState<MoodEntry[]>([
+  const [moods, setMoods] = usePersistentState<MoodEntry[]>('moods', [
       { id: '1', mood: MoodType.Happy, date: new Date(Date.now() - 86400000 * 2), reason: 'A lovely day out.' },
       { id: '2', mood: MoodType.Stressed, date: new Date(Date.now() - 86400000 * 1), reason: 'Work deadline pressure.' },
       { id: '3', mood: MoodType.Excited, date: new Date(), reason: 'Weekend plans!' },
   ]);
-  
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [goals, setGoals] = useState<FinancialGoal[]>([
+  const [notes, setNotes] = usePersistentState<Note[]>('notes', []);
+  const [goals, setGoals] = usePersistentState<FinancialGoal[]>('financialGoals', [
      { id: 'g1', name: 'Summer Vacation', targetAmount: 2000, savedAmount: 350, icon: '🌴', targetDate: '2024-08-31', isNorthStar: true }
   ]);
-  
-  const [gameState, setGameState] = useState<GameState>({ spentBrixCoins: 0, inventory: [], placedBrix: [], revealedCells: getInitialRevealedCells(), quests: [], questsCompletedSinceCooldown: 0, isVoiceOverEnabled: true });
-
-  // Editing state
-  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [pendingExpenseData, setPendingExpenseData] = useState<{ amount: string, category: string } | null>(null);
-
-  // Gamification State
-  const [streak, setStreak] = useState(1);
-  const [lastLogDate, setLastLogDate] = useState<Date | null>(new Date());
-  const [aevumVault, setAevumVault] = useState<AevumVault | null>(null);
-  const [pendingGoalForWish, setPendingGoalForWish] = useState<Omit<FinancialGoal, 'id'> | null>(null);
-  const [revealedGoal, setRevealedGoal] = useState<FinancialGoal | null>(null);
-  const [dailyWhisper, setDailyWhisper] = useState<string | null>(null);
-  
-  // AI Assistant State
-  const [chat, setChat] = useState<Chat | null>(null);
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [isAssistantLoading, setIsAssistantLoading] = useState(false);
-  const [chatContext, setChatContext] = useState<'general' | 'game'>('general');
-
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [achievements, setAchievements] = useState<Badge[]>(initialAchievements);
-  const [weeklyInsight, setWeeklyInsight] = useState('');
-  
-  // Settings State
-  const [settings, setSettings] = useState<AppSettings>({
+  const [gameState, setGameState] = usePersistentState<GameState>('gameState', { 
+    spentBrixCoins: 0, 
+    inventory: [], 
+    placedBrix: [], 
+    revealedCells: getInitialRevealedCells(), 
+    quests: [], 
+    questsCompletedSinceCooldown: 0, 
+    isVoiceOverEnabled: true 
+  });
+  const [achievements, setAchievements] = usePersistentState<Badge[]>('achievements', initialAchievements);
+  const [settings, setSettings] = usePersistentState<AppSettings>('appSettings', {
     notifications: { enabled: false, time: '19:00' },
     savingsTarget: { amount: 500, period: 'monthly' }
   });
+  const [aevumVault, setAevumVault] = usePersistentState<AevumVault | null>('aevumVault', null);
+  const [lastLogDate, setLastLogDate] = usePersistentState<Date | null>('lastLogDate', new Date());
+  const [chatHistory, setChatHistory] = usePersistentState<ChatMessage[]>('chatHistory', []);
+
+  // --- Volatile App State ---
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [pendingExpenseData, setPendingExpenseData] = useState<{ amount: string, category: string } | null>(null);
+  const [streak, setStreak] = useState(1);
+  const [pendingGoalForWish, setPendingGoalForWish] = useState<Omit<FinancialGoal, 'id'> | null>(null);
+  const [revealedGoal, setRevealedGoal] = useState<FinancialGoal | null>(null);
+  const [dailyWhisper, setDailyWhisper] = useState<string | null>(null);
+  const [chat, setChat] = useState<Chat | null>(null);
+  const [isAssistantLoading, setIsAssistantLoading] = useState(false);
+  const [chatContext, setChatContext] = useState<'general' | 'game'>('general');
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [weeklyInsight, setWeeklyInsight] = useState('');
   
+  const insightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notificationSentToday = useRef(false);
+
   const addNotification = useCallback((message: string, type: NotificationType = 'info') => {
       const id = Date.now();
       setNotifications(prev => [...prev, { id, message, type }]);
@@ -153,71 +158,31 @@ const App: React.FC = () => {
   }, [gameState.isVoiceOverEnabled]);
 
   useEffect(() => {
-    const savedProfileData = localStorage.getItem('userProfile');
-    if (savedProfileData) {
-        const profile = JSON.parse(savedProfileData);
-        setUserProfile(profile);
-        if (profile.age) {
-            const chatSession = startChatSession(profile, chatContext);
+    // Initial setup based on persisted user profile
+    if (userProfile) {
+        setCurrentScreen(Screen.Home); 
+        if (userProfile.age) {
+            const chatSession = startChatSession(userProfile, chatContext);
             setChat(chatSession);
-            const savedHistory = localStorage.getItem('chatHistory');
-            if (!savedHistory) {
+            if (chatHistory.length === 0) {
                 setChatHistory([{
                     role: 'model',
-                    content: `Welcome back, ${profile.name}! I'm Kai. How can I help you today?`,
+                    content: `Welcome back, ${userProfile.name}! I'm Kai. How can I help you today?`,
                     date: new Date()
                 }]);
             }
         }
+    } else {
+        setCurrentScreen(Screen.Welcome);
     }
-    
-    const savedSettings = localStorage.getItem('appSettings');
-    if (savedSettings) setSettings(JSON.parse(savedSettings));
 
-    const savedAchievements = localStorage.getItem('achievements');
-    if (savedAchievements) setAchievements(JSON.parse(savedAchievements));
-    
-    const savedIncome = localStorage.getItem('income');
-    if (savedIncome) setIncome(JSON.parse(savedIncome, (key, value) => key === 'date' ? new Date(value) : value));
-    
-    const savedGoals = localStorage.getItem('financialGoals');
-    if (savedGoals) setGoals(JSON.parse(savedGoals, (key, value) => key === 'date' ? new Date(value) : value));
-    
-    const savedVault = localStorage.getItem('aevumVault');
-    if(savedVault) setAevumVault(JSON.parse(savedVault));
-    
-    const savedChatHistory = localStorage.getItem('chatHistory');
-    if (savedChatHistory) {
-        setChatHistory(JSON.parse(savedChatHistory, (key, value) => key === 'date' ? new Date(value) : value));
-    }
-    
-    const savedGameState = localStorage.getItem('gameState');
-    if (savedGameState) {
-        const loadedState = JSON.parse(savedGameState);
-        if (!loadedState.revealedCells || loadedState.revealedCells.length === 0) {
-            loadedState.revealedCells = getInitialRevealedCells();
-        }
-        if (loadedState.questsCompletedSinceCooldown === undefined) {
-            loadedState.questsCompletedSinceCooldown = 0;
-        }
-        if (loadedState.isVoiceOverEnabled === undefined) {
-            loadedState.isVoiceOverEnabled = true;
-        }
-        setGameState(loadedState);
+    // Ensure game state integrity on load
+    if (gameState && (!gameState.revealedCells || gameState.revealedCells.length === 0)) {
+        setGameState(g => ({ ...g, revealedCells: getInitialRevealedCells() }));
     }
     
     setIsInitialized(true);
-  }, []);
-
-  useEffect(() => {
-    if (chatHistory.length > 1) { // Don't save initial message
-        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-    }
-  }, [chatHistory]);
-  
-  useEffect(() => {
-    localStorage.setItem('income', JSON.stringify(income));
-  }, [income]);
+  }, []); // Only run once on initial load
 
   useEffect(() => {
      if (userProfile?.age) {
@@ -227,23 +192,36 @@ const App: React.FC = () => {
   }, [chatContext, userProfile]);
 
   useEffect(() => {
-    localStorage.setItem('gameState', JSON.stringify(gameState));
-  }, [gameState]);
+    if (insightTimeoutRef.current) {
+        clearTimeout(insightTimeoutRef.current);
+    }
+    
+    insightTimeoutRef.current = setTimeout(() => {
+        const fetchWeeklyInsight = async () => {
+          if (!userProfile) return;
+          const today = new Date();
+          const lastWeek = new Date();
+          lastWeek.setDate(today.getDate() - 7);
+          
+          const recentExpenses = expenses.filter(e => new Date(e.date) >= lastWeek);
+          const recentMoods = moods.filter(m => new Date(m.date) >= lastWeek);
 
-  useEffect(() => {
-    const fetchWeeklyInsight = async () => {
-      if (!userProfile) return;
-      const today = new Date();
-      const lastWeek = new Date();
-      lastWeek.setDate(today.getDate() - 7);
-      
-      const recentExpenses = expenses.filter(e => new Date(e.date) >= lastWeek);
-      const recentMoods = moods.filter(m => new Date(m.date) >= lastWeek);
-      
-      const insightText = await getWeeklySmsInsight(recentExpenses, recentMoods, userProfile);
-      setWeeklyInsight(insightText);
-    };
-    fetchWeeklyInsight();
+          if (recentExpenses.length === 0 && recentMoods.length === 0) {
+            setWeeklyInsight('');
+            return;
+          }
+          
+          const insightText = await getWeeklySmsInsight(recentExpenses, recentMoods, userProfile);
+          setWeeklyInsight(insightText);
+        };
+        fetchWeeklyInsight();
+    }, 2000); // Debounce for 2 seconds
+
+    return () => {
+        if (insightTimeoutRef.current) {
+            clearTimeout(insightTimeoutRef.current);
+        }
+    }
   }, [expenses, moods, userProfile]);
 
     useEffect(() => {
@@ -294,11 +272,10 @@ const App: React.FC = () => {
 
         if (updated) {
             setAchievements(newAchievements);
-            localStorage.setItem('achievements', JSON.stringify(newAchievements));
         }
     };
     checkAchievements();
-  }, [expenses, moods, streak, achievements]);
+  }, [expenses, moods, streak, achievements, setAchievements]);
 
   useEffect(() => {
     const fetchDailyWhisper = async () => {
@@ -329,32 +306,43 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (settings.notifications.enabled) {
-        const checkTime = setInterval(() => {
-            const now = new Date();
-            const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            if (currentTime === settings.notifications.time) {
-                addNotification("LifeLens Reminder: Time to log your mood and expenses!", 'info');
-            }
-        }, 60000); 
-        return () => clearInterval(checkTime);
-    }
-  }, [settings.notifications, addNotification]);
+      const checkTime = setInterval(() => {
+        const now = new Date();
+        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        
+        // Reset the notification flag at midnight
+        if (currentTime === '00:00') {
+            notificationSentToday.current = false;
+        }
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
-      const updated = { ...settings, ...newSettings };
-      setSettings(updated);
-      localStorage.setItem('appSettings', JSON.stringify(updated));
-  }
+        if (currentTime === settings.notifications.time && !notificationSentToday.current) {
+          notificationSentToday.current = true; // Prevent multiple notifications for the same minute
+          const currencySymbol = userProfile ? { 'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥' }[userProfile.currency] : '$';
+          const activeGoal = goals.find(g => g.savedAmount < g.targetAmount);
+
+          if (activeGoal) {
+            const message = `"${activeGoal.name}" is waiting! You've saved ${currencySymbol}${activeGoal.savedAmount} of ${currencySymbol}${activeGoal.targetAmount}. You're doing great!`;
+            sendNotification("Your LifeLens Goal Reminder", message);
+          } else {
+            sendNotification("LifeLens Reminder", "Don't forget to set a new financial goal to keep your journey going!");
+          }
+        }
+      }, 30000); // Check every 30 seconds to be safe
+      return () => clearInterval(checkTime);
+    }
+  }, [settings.notifications, goals, userProfile]);
 
   const handleUpdateProfile = (updatedProfileData: Partial<UserProfile>) => {
     setUserProfile(prev => {
         if (!prev) return null;
-        const newProfile = { ...prev, ...updatedProfileData };
-        localStorage.setItem('userProfile', JSON.stringify(newProfile));
-        return newProfile;
+        return { ...prev, ...updatedProfileData };
     });
   };
   
+  const handleUpdateSettings = useCallback((updatedSettings: Partial<AppSettings>) => {
+    setSettings(prev => ({ ...prev, ...updatedSettings }));
+  }, [setSettings]);
+
   const handleLogActivity = useCallback(() => {
     const today = new Date();
     if (!lastLogDate || !isSameDay(today, lastLogDate)) {
@@ -373,34 +361,23 @@ const App: React.FC = () => {
       
       setLastLogDate(today);
     }
-  }, [lastLogDate, streak]);
+  }, [lastLogDate, streak, setLastLogDate]);
   
-  const handleAuthSuccess = () => {
-    if (userProfile && userProfile.age > 0) {
-      setCurrentScreen(Screen.Home);
-    } else {
-      setCurrentScreen(Screen.Onboarding);
-    }
+  const handleAuthSuccess = (authData: { name: string; email?: string; phone?: string }) => {
+    const newUserProfile: UserProfile = {
+        name: authData.name,
+        email: authData.email,
+        phone: authData.phone,
+        age: 0, 
+        currency: 'USD',
+        smsEnabled: false,
+    };
+    setUserProfile(newUserProfile);
+    setCurrentScreen(Screen.Onboarding);
   };
 
   const handleSaveProfile = (profile: UserProfile) => {
     setUserProfile(profile);
-    localStorage.setItem('userProfile', JSON.stringify(profile));
-
-    const savedGameState = localStorage.getItem('gameState');
-    if (!savedGameState) {
-        const initialGameState: GameState = {
-            spentBrixCoins: 0,
-            inventory: [],
-            placedBrix: [],
-            revealedCells: getInitialRevealedCells(),
-            quests: [],
-            questsCompletedSinceCooldown: 0,
-            isVoiceOverEnabled: true,
-        };
-        setGameState(initialGameState);
-        localStorage.setItem('gameState', JSON.stringify(initialGameState));
-    }
     
     const chatSession = startChatSession(profile, 'general');
     setChat(chatSession);
@@ -442,19 +419,19 @@ const App: React.FC = () => {
         handleLogActivity();
     }
     setCurrentScreen(Screen.Home);
-  }, [editingExpenseId, handleLogActivity]);
+  }, [editingExpenseId, handleLogActivity, setExpenses]);
   
   const addIncome = useCallback((incomeData: Omit<Income, 'id' | 'date'>) => {
     setIncome(prev => [...prev, { ...incomeData, id: Date.now().toString(), date: new Date() }]);
     handleLogActivity();
     setCurrentScreen(Screen.Home);
-  }, [handleLogActivity]);
+  }, [handleLogActivity, setIncome]);
 
   const deleteExpense = useCallback((id: string) => {
     setExpenses(prev => prev.filter(e => e.id !== id));
     setEditingExpenseId(null);
     setCurrentScreen(Screen.Home);
-  }, []);
+  }, [setExpenses]);
   
   const handleStartEditExpense = (id: string) => {
     setEditingExpenseId(id);
@@ -464,24 +441,22 @@ const App: React.FC = () => {
   const addMood = useCallback((moodData: { mood: MoodType, reason?: string }) => {
     setMoods(prev => [...prev, { id: Date.now().toString(), ...moodData, date: new Date() }]);
     handleLogActivity();
-  }, [handleLogActivity]);
+  }, [handleLogActivity, setMoods]);
 
   const addNote = useCallback((content: string) => {
     setNotes(prev => [...prev, { id: Date.now().toString(), content, date: new Date() }]);
     setCurrentScreen(Screen.Home);
-  }, []);
+  }, [setNotes]);
 
   const addFinancialGoal = useCallback((goalData: Omit<FinancialGoal, 'id'>) => {
       if (goals.length === 0 && !aevumVault) {
         setPendingGoalForWish(goalData);
         setCurrentScreen(Screen.SetVaultWish);
       } else {
-        const newGoals = [...goals, { ...goalData, id: Date.now().toString() }];
-        setGoals(newGoals);
-        localStorage.setItem('financialGoals', JSON.stringify(newGoals));
+        setGoals(prev => [...prev, { ...goalData, id: Date.now().toString() }]);
         setCurrentScreen(Screen.FinancialGoals);
       }
-  }, [goals, aevumVault]);
+  }, [goals, aevumVault, setGoals]);
 
   const sealVault = async (message: string) => {
       if (!pendingGoalForWish) return;
@@ -489,14 +464,10 @@ const App: React.FC = () => {
 
       const riddle = await getGoalRiddle(pendingGoalForWish.name);
       
-      const newVault: AevumVault = { goalId, message, riddle };
-      setAevumVault(newVault);
-      localStorage.setItem('aevumVault', JSON.stringify(newVault));
+      setAevumVault({ goalId, message, riddle });
       
       const newGoal: FinancialGoal = { ...pendingGoalForWish, id: goalId, isNorthStar: true };
-      const newGoals = [...goals, newGoal];
-      setGoals(newGoals);
-      localStorage.setItem('financialGoals', JSON.stringify(newGoals));
+      setGoals(prev => [...prev, newGoal]);
 
       setPendingGoalForWish(null);
       setCurrentScreen(Screen.FinancialGoals);
@@ -509,12 +480,8 @@ const App: React.FC = () => {
 
   const handleCloseVault = () => {
     if(revealedGoal) {
-        const newGoals = goals.filter(g => g.id !== revealedGoal.id);
-        setGoals(newGoals);
-        localStorage.setItem('financialGoals', JSON.stringify(newGoals));
-        
+        setGoals(prev => prev.filter(g => g.id !== revealedGoal.id));
         setAevumVault(null);
-        localStorage.removeItem('aevumVault');
         localStorage.removeItem('dailyWhisper');
         setDailyWhisper(null);
     }
@@ -558,7 +525,7 @@ const App: React.FC = () => {
           addNotification("Not enough Doubloons!", 'error');
           return false;
       }
-  }, [gameState, totalSaved, addNotification]);
+  }, [gameState, totalSaved, addNotification, setGameState]);
 
   const handlePlaceBrix = useCallback((brixId: string, x: number, y: number) => {
       setGameState(prev => {
@@ -585,7 +552,7 @@ const App: React.FC = () => {
           }
           return prev;
       });
-  }, []);
+  }, [setGameState]);
   
   const handleNavigateToChat = (context: 'general' | 'game') => {
       setChatContext(context);
@@ -617,7 +584,7 @@ const App: React.FC = () => {
       case Screen.Notes:
         return <NotesScreen onSave={addNote} onCancel={() => setCurrentScreen(Screen.Home)} />;
       case Screen.Profile:
-        return <ProfileScreen userProfile={userProfile} settings={settings} onSettingsChange={updateSettings} onProfileChange={handleUpdateProfile} onNavigate={(screen) => setCurrentScreen(screen)} />;
+        return <ProfileScreen userProfile={userProfile} settings={settings} onSettingsChange={handleUpdateSettings} onProfileChange={handleUpdateProfile} onNavigate={(screen) => setCurrentScreen(screen)} />;
       case Screen.FinancialGoals:
         return <FinancialGoalsScreen goals={goals} onNavigate={setCurrentScreen} userProfile={userProfile} />;
       case Screen.AddFinancialGoal:
@@ -634,13 +601,15 @@ const App: React.FC = () => {
         }
         return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
       case Screen.Game:
-        return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} />;
+        return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} addNotification={addNotification} />;
       case Screen.Chat:
         return <ChatScreen history={chatHistory} onSendMessage={handleSendMessage} onCancel={() => setCurrentScreen(Screen.Home)} userName={userProfile?.name || 'Explorer'} isLoading={isAssistantLoading} />;
       case Screen.SpendingCheck:
         return <SpendingCheckScreen userProfile={userProfile} goals={goals} onNavigate={setCurrentScreen} onPrepareExpense={handlePrepareExpense} addNotification={addNotification} />;
       case Screen.PrivacyPolicy:
         return <PrivacyPolicyScreen onBack={() => setCurrentScreen(Screen.Profile)} />;
+      case Screen.SmsImport:
+        return <SmsImportScreen onNavigate={setCurrentScreen} onPrepareExpense={handlePrepareExpense} addNotification={addNotification} />;
       default:
         return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
     }

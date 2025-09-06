@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Expense, MoodEntry, UserProfile, MoodType } from '../types';
 import { getMoodTip, getFinancialInsight } from '../services/geminiService';
@@ -189,7 +190,7 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
       <div className="space-y-6">
          <h2 className="text-xl font-bold text-primary text-center pt-4">Your Data Story</h2>
 
-         <div className="bg-card p-2 rounded-2xl shadow-card space-y-3">
+         <div className="bg-card p-4 rounded-2xl shadow-card space-y-3">
             <div className="flex justify-center bg-background p-1 rounded-full w-max mx-auto">
                 <PeriodButton label="Last 7 Days" value="week" current={period} onClick={setPeriod} />
                 <PeriodButton label="Last 30 Days" value="month" current={period} onClick={setPeriod} />
@@ -229,22 +230,22 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
         {filteredExpenses.length > 0 || filteredMoods.length > 0 ? (
             <>
                 <div className="bg-card p-4 rounded-2xl shadow-card">
-                    <h2 className="text-lg font-bold text-primary mb-4 text-center">Mood Trend</h2>
+                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Mood Trend</h3>
                     <MoodTrendChart moods={filteredMoods} />
                 </div>
 
                 <div className="bg-card p-4 rounded-2xl shadow-card">
-                    <h2 className="text-lg font-bold text-primary mb-4 text-center">Essential vs. Indulgence</h2>
+                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Spending vs. Indulgence</h3>
                     <SpendingBreakdownChart expenses={filteredExpenses} userProfile={userProfile} />
                 </div>
                 
                 <div className="bg-card p-4 rounded-2xl shadow-card">
-                    <h2 className="text-lg font-bold text-primary mb-4 text-center">Spending by Category</h2>
+                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Category Breakdown</h3>
                     <CategoryPieChart expenses={filteredExpenses} userProfile={userProfile} />
                 </div>
 
                 <div className="bg-card p-4 rounded-2xl shadow-card">
-                    <h2 className="text-lg font-bold text-primary mb-4 text-center">Spending vs Mood</h2>
+                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Spending vs. Mood</h3>
                     <InsightChart expenses={filteredExpenses} moods={moods} userProfile={userProfile}/>
                 </div>
             </>

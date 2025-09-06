@@ -66,6 +66,12 @@ const PlusIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
+const SmsIcon = ({ className }: { className?: string }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+    </svg>
+);
+
 const IncomeIcon = ({ className }: { className?: string }) => (
     <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h.375m16.5 0h.375a1.125 1.125 0 0 1 1.125 1.125v9.75c0 .621-.504 1.125-1.125-1.125h-.375m0 0V6.375m0 12.375-1.5-1.5m1.5 1.5-1.5-1.5m0 0H3.75m16.5 0-1.5 1.5m-15-1.5L5.25 18l-1.5-1.5m15 0-1.5 1.5m1.5-1.5L18.75 18l1.5-1.5" />
@@ -249,22 +255,26 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
 
       <div>
         <h2 className="text-xl font-bold text-primary mb-4">Log Your Activity</h2>
-        <div className="grid grid-cols-4 gap-3">
-            <button onClick={() => onNavigate(Screen.AddIncome)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
+        <div className="grid grid-cols-3 gap-3">
+            <button onClick={() => onNavigate(Screen.AddIncome)} className="flex flex-col items-center justify-center bg-card p-3 rounded-2xl shadow-card transition-transform transform hover:scale-105">
                 <IncomeIcon className="w-8 h-8 text-green-500"/>
-                <span className="font-semibold text-sm mt-2">Income</span>
+                <span className="font-semibold text-xs mt-2">Income</span>
             </button>
-            <button onClick={() => onNavigate(Screen.AddExpense)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
+            <button onClick={() => onNavigate(Screen.AddExpense)} className="flex flex-col items-center justify-center bg-card p-3 rounded-2xl shadow-card transition-transform transform hover:scale-105">
                 <PlusIcon className="w-8 h-8 text-primary"/>
-                <span className="font-semibold text-sm mt-2">Expense</span>
+                <span className="font-semibold text-xs mt-2">Expense</span>
             </button>
-            <button onClick={() => onNavigate(Screen.InnerCompass)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
+            <button onClick={() => onNavigate(Screen.InnerCompass)} className="flex flex-col items-center justify-center bg-card p-3 rounded-2xl shadow-card transition-transform transform hover:scale-105">
                 <PlusIcon className="w-8 h-8 text-accent"/>
-                <span className="font-semibold text-sm mt-2">Mood</span>
+                <span className="font-semibold text-xs mt-2">Mood</span>
             </button>
-            <button onClick={() => onNavigate(Screen.Notes)} className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all">
+            <button onClick={() => onNavigate(Screen.Notes)} className="flex flex-col items-center justify-center bg-card p-3 rounded-2xl shadow-card transition-transform transform hover:scale-105">
                 <PlusIcon className="w-8 h-8 text-secondary"/>
-                <span className="font-semibold text-sm mt-2">Note</span>
+                <span className="font-semibold text-xs mt-2">Note</span>
+            </button>
+             <button onClick={() => onNavigate(Screen.SmsImport)} className="col-span-2 flex flex-col items-center justify-center bg-card p-3 rounded-2xl shadow-card transition-transform transform hover:scale-105">
+                <SmsIcon className="w-8 h-8 text-blue-500"/>
+                <span className="font-semibold text-xs mt-2">Import SMS</span>
             </button>
         </div>
       </div>
