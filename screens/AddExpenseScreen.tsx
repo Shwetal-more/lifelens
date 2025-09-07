@@ -28,6 +28,12 @@ const moodEmojis: Record<MoodType, string> = {
   [MoodType.Excited]: '🤩',
   [MoodType.Neutral]: '😐',
   [MoodType.Anxious]: '😟',
+  [MoodType.Proud]: '😎',
+  [MoodType.Grateful]: '🙏',
+  [MoodType.Tired]: '😴',
+  [MoodType.Bored]: '😒',
+  [MoodType.Playful]: '😜',
+  [MoodType.Content]: '😌',
 };
 
 const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave, onCancel, onDelete, expenseToEdit, expenses, goals, addNotification, pendingData, onClearPendingData }) => {
@@ -161,7 +167,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form id="tutorial-expense-prefill" onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-secondary mb-1 ml-2">Amount</label>
             <div className="relative">

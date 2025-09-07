@@ -32,7 +32,7 @@ class SpeechService {
     });
   }
   
-  async speak(text: string, rate = 0.9, pitch = 0.8): Promise<void> {
+  async speak(text: string, userAge?: number): Promise<void> {
     await this.voicesLoaded;
     
     if (!text) {
@@ -45,6 +45,21 @@ class SpeechService {
     if (this.voice) {
         utterance.voice = this.voice;
     }
+    
+    let rate = 0.9;
+    let pitch = 0.8;
+
+    if (userAge) {
+      if (userAge < 18) { // Gen Alpha
+          rate = 1.1;
+          pitch = 1.0;
+      } else if (userAge < 28) { // Gen Z
+          rate = 1.0;
+          pitch = 0.9;
+      }
+      // Default rate/pitch for Millennial+ is already set
+    }
+    
     utterance.rate = rate;
     utterance.pitch = pitch;
     this.synth.speak(utterance);

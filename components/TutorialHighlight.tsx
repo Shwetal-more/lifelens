@@ -11,9 +11,10 @@ interface TutorialHighlightProps {
   onSkip: () => void;
   isVoiceOverEnabled: boolean;
   advancesBy?: 'action' | 'next';
+  userAge?: number;
 }
 
-const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, text, step, totalSteps, onNext, onSkip, isVoiceOverEnabled, advancesBy = 'next' }) => {
+const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, text, step, totalSteps, onNext, onSkip, isVoiceOverEnabled, advancesBy = 'next', userAge }) => {
   const [highlightBox, setHighlightBox] = useState<DOMRect | null>(null);
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({ opacity: 0 });
   const [isVisible, setIsVisible] = useState(false);
@@ -24,7 +25,7 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
   useEffect(() => {
     if (isVoiceOverEnabled && isVisible) {
       const speechTimeout = setTimeout(() => {
-        speechService.speak(`${title}. ${text}`);
+        speechService.speak(`${title}. ${text}`, userAge);
       }, 400); // Delay for UI transition
 
       return () => {
@@ -34,7 +35,7 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
     } else {
       speechService.cancel();
     }
-  }, [title, text, isVoiceOverEnabled, isVisible]);
+  }, [title, text, isVoiceOverEnabled, isVisible, userAge]);
 
   // --- Core Layout and Positioning Effect ---
   useLayoutEffect(() => {
@@ -105,7 +106,7 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
         observer.observe(document.body, { childList: true, subtree: true, attributes: true });
     };
     
-    const initTimeout = setTimeout(startObserving, 50);
+    const initTimeout = setTimeout(startObserving, 150);
     
     const handleReposition = () => findAndSetTarget();
     window.addEventListener('resize', handleReposition);

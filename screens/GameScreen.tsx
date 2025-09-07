@@ -178,8 +178,8 @@ const mapLayout = [
     "WWWWWWLLLLDLWWWWWWWW",
     "WWWWWWWWLLLLWWWWWWWW",
     "WWWWWWWWWLLWWWWWWWWW",
-    "WWWWWWWWWWLWWWWWWWWW",
-    "WWWWWWWWLL LWWWWWWWWW",
+    "WWWWWWWWWLWWWWWWWWWW",
+    "WWWWWWWWWLWWWWWWWWWW",
     "WWWWWWWWWHWWWWWWWWWW",
     "WWWWWWWWWWWWWWWWWWWW",
 ].join("").split("");
@@ -420,6 +420,7 @@ interface GameScreenProps {
   addNotification: (message: string, type: NotificationType) => void;
   isAppTutorialRunning: boolean;
   appTutorialStepId: string | null;
+  onGameTutorialComplete: () => void;
 }
 
 const GameScreen: React.FC<GameScreenProps> = ({
@@ -433,6 +434,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   addNotification,
   isAppTutorialRunning,
   appTutorialStepId,
+  onGameTutorialComplete,
 }) => {
   const [isShopOpen, setIsShopOpen] = useState(false)
   const [isInventoryOpen, setIsInventoryOpen] = useState(false)
@@ -535,6 +537,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const handleTutorialSkip = () => {
     setTutorialState({ isActive: false, step: 0 });
     setHasSeenTutorial(true);
+    onGameTutorialComplete();
   };
 
 
@@ -867,8 +870,15 @@ const GameScreen: React.FC<GameScreenProps> = ({
             const revealedSet = new Set(prevGameState.revealedCells.map(c => `${c.x},${c.y}`));
             (quest.reward.mapPieces || []).forEach(p => revealedSet.add(`${p.x},${p.y}`));
             
+            const allCurrentlyRevealedCells = Array.from(revealedSet).map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+
             const frontier = new Set<string>();
-            prevGameState.revealedCells.forEach(cell => {
+            // BUG FIX: Iterate over all *currently* revealed cells (including newly revealed ones)
+            // to find the frontier, not just the previous state's revealed cells.
+            allCurrentlyRevealedCells.forEach(cell => {
                 const neighbors = [
                     { x: cell.x - 1, y: cell.y }, { x: cell.x + 1, y: cell.y },
                     { x: cell.x, y: cell.y - 1 }, { x: cell.x, y: cell.y + 1 },

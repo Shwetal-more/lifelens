@@ -37,6 +37,12 @@ export enum MoodType {
   Excited = 'Excited',
   Neutral = 'Neutral',
   Anxious = 'Anxious',
+  Proud = 'Proud',
+  Grateful = 'Grateful',
+  Tired = 'Tired',
+  Bored = 'Bored',
+  Playful = 'Playful',
+  Content = 'Content',
 }
 
 export interface Expense {

@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Income, UserProfile } from '../types';
 
 interface AddIncomeScreenProps {
   onSave: (income: Omit<Income, 'id' | 'date'>) => void;
   onCancel: () => void;
   userProfile: UserProfile | null;
+  pendingData?: { amount: string; source: string } | null;
+  onClearPendingData: () => void;
 }
 
 const currencySymbols: { [key: string]: string } = {
   'USD': '$', 'EUR': '€', 'GBP': '£', 'INR': '₹', 'JPY': '¥',
 };
 
-const AddIncomeScreen: React.FC<AddIncomeScreenProps> = ({ onSave, onCancel, userProfile }) => {
+const AddIncomeScreen: React.FC<AddIncomeScreenProps> = ({ onSave, onCancel, userProfile, pendingData, onClearPendingData }) => {
   const currencySymbol = userProfile ? currencySymbols[userProfile.currency] : '$';
   const [amount, setAmount] = useState('');
   const [source, setSource] = useState('');
@@ -27,6 +29,14 @@ const AddIncomeScreen: React.FC<AddIncomeScreenProps> = ({ onSave, onCancel, use
       source,
     });
   };
+
+  useEffect(() => {
+    if (pendingData) {
+      setAmount(pendingData.amount);
+      setSource(pendingData.source);
+      onClearPendingData();
+    }
+  }, [pendingData, onClearPendingData]);
 
   const inputStyles = "w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none transition-shadow";
 

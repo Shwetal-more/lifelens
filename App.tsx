@@ -28,6 +28,7 @@ import { sendNotification } from './services/notificationService';
 import TutorialHighlight from './components/TutorialHighlight';
 import { auth } from './services/firebase';
 import { initialBadges } from './services/badgeService';
+import { getTutorialStepContent, appTutorialSteps, smsImportTutorialSteps } from './services/tutorialService';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -57,37 +58,11 @@ const COIN_CONVERSION_RATE = 2; // 1 currency unit = 2 Doubloons
 // Helper function to calculate initially revealed land cells for the new map
 const getInitialRevealedCells = () => {
     return [
-        { x: 9, y: 18 }, // New Shipwreck 'H' location
-        { x: 9, y: 17 }, // Adjacent starting land tile 'L'
+        { x: 9, y: 18 }, // Shipwreck 'H' location
+        { x: 9, y: 17 }, // Path
+        { x: 9, y: 16 }, // Path entrance
     ];
 };
-
-const appTutorialConfig = [
-    // --- HOME SCREEN ---
-    { targetId: 'tutorial-welcome-header', screen: Screen.Home, title: "Welcome to LifeLens!", text: "I'm Kai, your personal guide. Let me show you around your new dashboard for financial and emotional wellness.", advancesBy: 'next' as const },
-    { targetId: 'tutorial-summary-card', screen: Screen.Home, title: "Your 7-Day Summary", text: "This card gives you a quick overview of your recent income, expenses, and savings. It's your financial pulse.", advancesBy: 'next' as const },
-    { targetId: 'tutorial-aevum-vault-card', screen: Screen.Home, title: "The Aevum Vault", text: "This is a special feature where you can seal goals with a message to your future self, unlocking it only when you succeed.", advancesBy: 'next' as const },
-    { targetId: 'tutorial-log-activity-grid', screen: Screen.Home, title: "Log Your Activities", text: "The heart of LifeLens is here. Use these buttons to log expenses, income, and moods. Consistency unlocks powerful insights!", advancesBy: 'next' as const },
-    { targetId: 'tutorial-ai-chat-button', screen: Screen.Home, title: "Chat With Me!", text: "Have a question or need advice? Tap my icon anytime to chat. I'm here to help you on your journey.", advancesBy: 'next' as const },
-    
-    // --- TRANSITION TO COMPASS ---
-    { targetId: 'tutorial-nav-compass', screen: Screen.Home, title: "Discover Your Compass", text: "Now, let's explore your Inner Compass. This is where the magic happens. Tap the Compass icon to continue.", advancesBy: 'action' as const },
-    
-    // --- INNER COMPASS SCREEN ---
-    { targetId: 'tutorial-compass-header', screen: Screen.InnerCompass, title: "Map Your Inner World", text: "This screen helps you understand the connection between your feelings and your spending habits.", advancesBy: 'next' as const },
-    { targetId: 'tutorial-mood-tracker', screen: Screen.InnerCompass, title: "Track Your Mood", text: "Start by logging how you feel. Over time, you'll see how your emotions influence your financial choices.", advancesBy: 'next' as const },
-    { targetId: 'tutorial-secret-pattern', screen: Screen.InnerCompass, title: "Unlock Secret Patterns", text: "As you add more data, I'll analyze it and reveal interesting patterns about your habits right here.", advancesBy: 'next' as const },
-
-    // --- TRANSITION TO GAME ---
-    { targetId: 'tutorial-nav-island', screen: Screen.InnerCompass, title: "Your Financial Legacy", text: "Finally, let's visit your island. Your real-world financial journey powers a game where you build a legacy. Tap the Island icon!", advancesBy: 'action' as const },
-    
-    // --- FULL MAP VIEW STEP ---
-    { targetId: 'full-map-view-step', screen: Screen.Game, title: "A World of Possibility", text: "This is your island, shrouded in fog. Completing quests will reveal it piece by piece. Let's focus on your start.", advancesBy: 'next' as const },
-
-    // --- HAND-OFF TO GAME ---
-    { targetId: 'pirates-legacy-header', screen: Screen.Game, title: "Welcome to Your Island!", text: "Every saving and goal you achieve helps you build your paradise. A more detailed game tutorial will now begin. Enjoy!", advancesBy: 'next' as const },
-];
-
 
 const NotificationToast: React.FC<{ notification: Notification; onDismiss: () => void }> = ({ notification, onDismiss }) => {
     const typeStyles = {
@@ -148,12 +123,14 @@ const App: React.FC = () => {
   const [lastLogDate, setLastLogDate] = usePersistentState<Date | null>('lastLogDate', new Date());
   const [chatHistory, setChatHistory] = usePersistentState<ChatMessage[]>('chatHistory', []);
   const [hasSeenAppTutorial, setHasSeenAppTutorial] = usePersistentState('hasSeenAppTutorial', false);
+  const [hasSeenSmsTutorial, setHasSeenSmsTutorial] = usePersistentState('hasSeenSmsTutorial', false);
 
 
   // --- Volatile App State ---
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pendingExpenseData, setPendingExpenseData] = useState<{ amount: string, category: string, purpose: string } | null>(null);
+  const [pendingIncomeData, setPendingIncomeData] = useState<{ amount: string, source: string } | null>(null);
   const [streak, setStreak] = useState(1);
   const [pendingGoalForWish, setPendingGoalForWish] = useState<Omit<FinancialGoal, 'id'> | null>(null);
   const [revealedGoal, setRevealedGoal] = useState<FinancialGoal | null>(null);
@@ -162,7 +139,10 @@ const App: React.FC = () => {
   const [chatContext, setChatContext] = useState<'general' | 'game'>('general');
   const [showConfetti, setShowConfetti] = useState(false);
   const [weeklyInsight, setWeeklyInsight] = useState('');
-  const [appTutorialState, setAppTutorialState] = useState({ isActive: false, step: 0 });
+  
+  // --- Tutorial State ---
+  const [activeTutorial, setActiveTutorial] = useState<'app' | 'sms' | null>(null);
+  const [tutorialStep, setTutorialStep] = useState(0);
 
   
   const insightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -172,12 +152,12 @@ const App: React.FC = () => {
       const id = Date.now();
       setNotifications(prev => [...prev, { id, message, type }]);
       if (gameState.isVoiceOverEnabled) {
-          speechService.speak(message);
+          speechService.speak(message, userProfile?.age);
       }
       setTimeout(() => {
           setNotifications(prev => prev.filter(n => n.id !== id));
       }, 4000);
-  }, [gameState.isVoiceOverEnabled]);
+  }, [gameState.isVoiceOverEnabled, userProfile?.age]);
 
   useEffect(() => {
     // Initial setup based on persisted user profile
@@ -399,7 +379,8 @@ const App: React.FC = () => {
     setCurrentScreen(Screen.Home);
 
     if (!hasSeenAppTutorial) {
-        setAppTutorialState({ isActive: true, step: 0 });
+        setActiveTutorial('app');
+        setTutorialStep(0);
     }
   };
   
@@ -504,8 +485,19 @@ const App: React.FC = () => {
   };
 
   const handlePrepareExpense = (data: { amount: string, category: string, purpose: string }) => {
+    if (activeTutorial === 'sms') {
+      handleTutorialNext();
+    }
     setPendingExpenseData(data);
     setCurrentScreen(Screen.AddExpense);
+  };
+  
+  const handlePrepareIncome = (data: { amount: string, source: string }) => {
+    if (activeTutorial === 'sms') {
+      handleTutorialNext();
+    }
+    setPendingIncomeData(data);
+    setCurrentScreen(Screen.AddIncome);
   };
   
   const handleLogout = () => {
@@ -587,47 +579,58 @@ const App: React.FC = () => {
 
   const expenseToEdit = expenses.find(e => e.id === editingExpenseId) || null;
 
-  // --- App Tutorial Logic ---
-  const handleAppTutorialSkip = useCallback(() => {
-    setAppTutorialState({ isActive: false, step: 0 });
-    setHasSeenAppTutorial(true);
+  // --- Tutorial Logic ---
+  const endTutorial = useCallback(() => {
+    if (activeTutorial === 'app') setHasSeenAppTutorial(true);
+    if (activeTutorial === 'sms') setHasSeenSmsTutorial(true);
+    setActiveTutorial(null);
+    setTutorialStep(0);
     speechService.cancel();
-  }, [setHasSeenAppTutorial]);
-
-  const handleAppTutorialNext = useCallback(() => {
-    setAppTutorialState(prev => {
-      const nextStepIndex = prev.step + 1;
-      if (nextStepIndex >= appTutorialConfig.length) {
-        // This is the "Finish" action.
-        setHasSeenAppTutorial(true);
-        speechService.cancel();
-        // Return the new state to close the tutorial.
-        return { isActive: false, step: 0 };
+  }, [activeTutorial, setHasSeenAppTutorial, setHasSeenSmsTutorial]);
+  
+  const handleTutorialNext = useCallback(() => {
+      const tutorialConfig = activeTutorial === 'app' ? appTutorialSteps : smsImportTutorialSteps;
+      const nextStepIndex = tutorialStep + 1;
+      if (nextStepIndex >= tutorialConfig.length) {
+          endTutorial();
+      } else {
+          setTutorialStep(nextStepIndex);
       }
-      // Advance to the next step.
-      return { ...prev, step: nextStepIndex };
-    });
-  }, [setHasSeenAppTutorial]);
+  }, [activeTutorial, tutorialStep, endTutorial]);
   
   const handleNavigation = (screen: Screen) => {
-    if (appTutorialState.isActive) {
-        const currentStepConfig = appTutorialConfig[appTutorialState.step];
-        const nextStepConfig = appTutorialConfig[appTutorialState.step + 1];
+      const tutorialConfig = activeTutorial === 'app' ? appTutorialSteps : smsImportTutorialSteps;
+      if (activeTutorial && tutorialStep < tutorialConfig.length) {
+          const currentStepConfig = tutorialConfig[tutorialStep];
+          const nextStepConfig = tutorialConfig[tutorialStep + 1];
 
-        // Check if this navigation is the action the tutorial is waiting for
-        if (currentStepConfig.advancesBy === 'action' && nextStepConfig && nextStepConfig.screen === screen) {
-            handleAppTutorialNext();
-        }
-    }
-    setCurrentScreen(screen);
+          if (currentStepConfig.advancesBy === 'action' && nextStepConfig && nextStepConfig.screen === screen) {
+              handleTutorialNext();
+          }
+      } else if (screen === Screen.SmsImport && !hasSeenSmsTutorial && !activeTutorial) {
+          setActiveTutorial('sms');
+          setTutorialStep(0);
+      }
+      setCurrentScreen(screen);
   };
   
+  const handleGameTutorialComplete = useCallback(() => {
+    if (!hasSeenSmsTutorial) {
+      setCurrentScreen(Screen.SmsImport);
+      setActiveTutorial('sms');
+      setTutorialStep(0);
+    }
+  }, [hasSeenSmsTutorial]);
+
   // --- Screen Rendering ---
   if (!isInitialized) {
     return <div className="h-full w-full flex items-center justify-center"><p>Loading...</p></div>;
   }
   
   const renderScreen = () => {
+    const isAppTutorialActive = activeTutorial === 'app';
+    const currentAppTutorialStep = isAppTutorialActive ? appTutorialSteps[tutorialStep] : null;
+
     switch (currentScreen) {
       case Screen.Welcome:
         return <WelcomeScreen onNavigate={() => setCurrentScreen(Screen.SignUpLogin)} />;
@@ -640,7 +643,7 @@ const App: React.FC = () => {
       case Screen.AddExpense:
         return <AddExpenseScreen userProfile={userProfile} onSave={saveExpense} onCancel={() => { setEditingExpenseId(null); setCurrentScreen(Screen.Home); }} onDelete={deleteExpense} expenseToEdit={expenseToEdit} expenses={expenses} goals={goals} addNotification={addNotification} pendingData={pendingExpenseData} onClearPendingData={() => setPendingExpenseData(null)} />;
       case Screen.AddIncome:
-        return <AddIncomeScreen onSave={addIncome} onCancel={() => setCurrentScreen(Screen.Home)} userProfile={userProfile} />;
+        return <AddIncomeScreen onSave={addIncome} onCancel={() => setCurrentScreen(Screen.Home)} userProfile={userProfile} pendingData={pendingIncomeData} onClearPendingData={() => setPendingIncomeData(null)} />;
       case Screen.InnerCompass:
         return <InnerCompassScreen expenses={expenses} moods={moods} userProfile={userProfile} onSaveMood={addMood} />;
       case Screen.Notes:
@@ -663,8 +666,7 @@ const App: React.FC = () => {
         }
         return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={() => handleNavigateToChat('general')} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
       case Screen.Game:
-        const currentTutorialStepId = appTutorialState.isActive ? appTutorialConfig[appTutorialState.step].targetId : null;
-        return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} addNotification={addNotification} isAppTutorialRunning={appTutorialState.isActive} appTutorialStepId={currentTutorialStepId} />;
+        return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} addNotification={addNotification} isAppTutorialRunning={isAppTutorialActive} appTutorialStepId={currentAppTutorialStep?.targetId || null} onGameTutorialComplete={handleGameTutorialComplete} />;
       case Screen.Chat:
         return <ChatScreen history={chatHistory} onSendMessage={handleSendMessage} onCancel={() => setCurrentScreen(Screen.Home)} userName={userProfile?.name || 'Explorer'} isLoading={isAssistantLoading} />;
       case Screen.SpendingCheck:
@@ -672,7 +674,7 @@ const App: React.FC = () => {
       case Screen.PrivacyPolicy:
         return <PrivacyPolicyScreen onBack={() => setCurrentScreen(Screen.Profile)} />;
       case Screen.SmsImport:
-        return <SmsImportScreen onNavigate={setCurrentScreen} onPrepareExpense={handlePrepareExpense} addNotification={addNotification} />;
+        return <SmsImportScreen onNavigate={setCurrentScreen} onPrepareExpense={handlePrepareExpense} onPrepareIncome={handlePrepareIncome} addNotification={addNotification} onAnalysisComplete={handleTutorialNext} isTutorialActive={activeTutorial === 'sms'} />;
       default:
         return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={() => handleNavigateToChat('general')} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
     }
@@ -680,21 +682,36 @@ const App: React.FC = () => {
   
   const showNav = ![Screen.Welcome, Screen.SignUpLogin, Screen.Onboarding, Screen.SetVaultWish, Screen.VaultRevealed, Screen.Chat, Screen.PrivacyPolicy].includes(currentScreen);
 
+  const renderTutorial = () => {
+      if (!activeTutorial || !userProfile) return null;
+
+      const tutorialConfig = activeTutorial === 'app' ? appTutorialSteps : smsImportTutorialSteps;
+      if (tutorialStep >= tutorialConfig.length) return null;
+      
+      const currentStepConfig = tutorialConfig[tutorialStep];
+      if (currentStepConfig.screen && currentStepConfig.screen !== currentScreen) return null;
+
+      const { title, text } = getTutorialStepContent(activeTutorial, tutorialStep, userProfile.age);
+
+      return (
+          <TutorialHighlight
+              targetId={currentStepConfig.targetId}
+              title={title}
+              text={text}
+              step={tutorialStep}
+              totalSteps={tutorialConfig.length}
+              onNext={handleTutorialNext}
+              onSkip={endTutorial}
+              isVoiceOverEnabled={gameState.isVoiceOverEnabled ?? true}
+              advancesBy={currentStepConfig.advancesBy}
+              userAge={userProfile.age}
+          />
+      );
+  };
+
   return (
     <div className="h-full bg-background font-sans text-primary">
-        {appTutorialState.isActive && (
-            <TutorialHighlight
-                targetId={appTutorialConfig[appTutorialState.step].targetId}
-                title={appTutorialConfig[appTutorialState.step].title}
-                text={appTutorialConfig[appTutorialState.step].text}
-                step={appTutorialState.step}
-                totalSteps={appTutorialConfig.length}
-                onNext={handleAppTutorialNext}
-                onSkip={handleAppTutorialSkip}
-                isVoiceOverEnabled={gameState.isVoiceOverEnabled ?? true}
-                advancesBy={appTutorialConfig[appTutorialState.step].advancesBy}
-            />
-        )}
+        {renderTutorial()}
        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-full max-w-sm px-4 space-y-2">
             {notifications.map(notification => (
                 <NotificationToast

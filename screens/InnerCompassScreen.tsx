@@ -4,7 +4,9 @@ import { getMoodTip, getFinancialInsight } from '../services/geminiService';
 import InsightChart from '../components/InsightChart';
 import CategoryPieChart from '../components/CategoryPieChart';
 import MoodTrendChart from '../components/MoodTrendChart';
+import CategoryTrendChart from '../components/CategoryTrendChart';
 
+// FIX: Expanded moodEmojis to include all MoodType enum values to resolve TypeScript error.
 const moodEmojis: Record<MoodType, string> = {
   [MoodType.Happy]: '😊',
   [MoodType.Sad]: '😢',
@@ -12,6 +14,12 @@ const moodEmojis: Record<MoodType, string> = {
   [MoodType.Excited]: '🤩',
   [MoodType.Neutral]: '😐',
   [MoodType.Anxious]: '😟',
+  [MoodType.Proud]: '😎',
+  [MoodType.Grateful]: '🙏',
+  [MoodType.Tired]: '😴',
+  [MoodType.Bored]: '😒',
+  [MoodType.Playful]: '😜',
+  [MoodType.Content]: '😌',
 };
 
 const MoodButton: React.FC<{ mood: MoodType, onSelect: (mood: MoodType) => void, isSelected: boolean }> = ({ mood, onSelect, isSelected }) => (
@@ -237,25 +245,29 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
         </div>
 
         {filteredExpenses.length > 0 || filteredMoods.length > 0 ? (
-            <div className="space-y-6 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
-                <div className="bg-card p-4 rounded-2xl shadow-card md:col-span-2">
-                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Spending Breakdown & Mood</h3>
-                    <InsightChart expenses={filteredExpenses} moods={moods} userProfile={userProfile}/>
-                </div>
-                <div className="bg-card p-4 rounded-2xl shadow-card">
-                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Mood Trend</h3>
-                    <MoodTrendChart moods={filteredMoods} />
-                </div>
-                <div className="bg-card p-4 rounded-2xl shadow-card">
-                    <h3 className="text-lg font-bold text-primary mb-4 text-center">Category Breakdown</h3>
-                    <CategoryPieChart expenses={filteredExpenses} userProfile={userProfile} />
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-card p-4 rounded-2xl shadow-card">
+              <h3 className="text-lg font-bold text-primary mb-4 text-center">Spending Breakdown</h3>
+              <InsightChart expenses={filteredExpenses} userProfile={userProfile} />
             </div>
+            <div className="bg-card p-4 rounded-2xl shadow-card">
+              <h3 className="text-lg font-bold text-primary mb-4 text-center">Mood Trend</h3>
+              <MoodTrendChart moods={filteredMoods} />
+            </div>
+            <div className="bg-card p-4 rounded-2xl shadow-card">
+              <h3 className="text-lg font-bold text-primary mb-4 text-center">Category Breakdown</h3>
+              <CategoryPieChart expenses={filteredExpenses} userProfile={userProfile} />
+            </div>
+            <div className="bg-card p-4 rounded-2xl shadow-card">
+              <h3 className="text-lg font-bold text-primary mb-4 text-center">Category Spending Over Time</h3>
+              <CategoryTrendChart expenses={filteredExpenses} userProfile={userProfile} />
+            </div>
+          </div>
         ) : (
-            <div className="bg-card p-8 rounded-2xl shadow-card text-center">
-                <h3 className="text-xl font-semibold text-primary">No Data for This Period</h3>
-                <p className="text-secondary mt-2">Try logging more activities or selecting a different time frame to see your insights.</p>
-            </div>
+          <div className="bg-card p-8 rounded-2xl shadow-card text-center">
+            <h3 className="text-xl font-semibold text-primary">No Data for This Period</h3>
+            <p className="text-secondary mt-2">Try logging more activities or selecting a different time frame to see your insights.</p>
+          </div>
         )}
       </div>
     </div>

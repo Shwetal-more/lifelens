@@ -7,13 +7,21 @@ interface MoodTrendChartProps {
 }
 
 const moodToValue = (mood: MoodType): number => {
+    // FIX: Expanded moodMap to include all MoodType enum values to resolve TypeScript error.
+    // Moods are grouped into a 1-6 scale for trend visualization.
     const moodMap: Record<MoodType, number> = {
         [MoodType.Sad]: 1,
         [MoodType.Anxious]: 2,
+        [MoodType.Tired]: 2,
         [MoodType.Stressed]: 3,
+        [MoodType.Bored]: 3,
         [MoodType.Neutral]: 4,
         [MoodType.Happy]: 5,
+        [MoodType.Content]: 5,
+        [MoodType.Grateful]: 5,
+        [MoodType.Proud]: 5,
         [MoodType.Excited]: 6,
+        [MoodType.Playful]: 6,
     };
     return moodMap[mood] || 3;
 };

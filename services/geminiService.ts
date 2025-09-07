@@ -74,18 +74,21 @@ export const getFinancialInsight = async (expenses: Expense[]): Promise<string> 
 };
 
 
-export const parseSmsExpense = async (sms: string): Promise<{ amount: number, category: string, purpose: string } | null> => {
+export const parseSmsExpense = async (sms: string): Promise<{ type: 'income' | 'expense', amount: number, category: string, purpose: string } | null> => {
     const prompt = `
     You are an expert financial assistant AI. Your task is to analyze a single SMS transaction message and extract key information into a strict JSON format.
 
     **Rules:**
-    1.  **Analyze ONLY Debit/Expense Messages:** Only process messages that clearly indicate money being spent, debited, or paid.
-    2.  **IGNORE Credits/Income:** If the message is about a credit, deposit, or money received, you MUST return \`null\`.
-    3.  **IGNORE Non-Transaction Messages:** If the message is a one-time password (OTP), an ad, a notification, or anything other than a transaction debit, you MUST return \`null\`.
+    1.  **Analyze Transaction Messages:** Process messages that clearly indicate money being spent, debited, paid OR received, credited, added.
+    2.  **Determine Transaction Type:**
+        *   If money is being spent (e.g., "debited", "spent", "paid"), set \`type\` to "expense".
+        *   If money is being received (e.g., "credited", "received", "added"), set \`type\` to "income".
+    3.  **IGNORE Non-Transaction Messages:** If the message is a one-time password (OTP), an ad, a notification, or anything other than a transaction, you MUST return \`null\`.
     4.  **Extract the following fields:**
+        *   \`type\`: (string) Must be either "expense" or "income".
         *   \`amount\`: (number) The total amount of the transaction.
-        *   \`category\`: (string) A relevant expense category from this list: [Food, Shopping, Transport, Bills, Groceries, Entertainment, Health, General, Travel, Services].
-        *   \`purpose\`: (string) The merchant name or a brief description of the expense (e.g., "Amazon", "Starbucks", "ATM Withdrawal").
+        *   \`category\`: (string) For expenses, a relevant category: [Food, Shopping, Transport, Bills, Groceries, Entertainment, Health, General, Travel, Services]. For income, a relevant category: [Salary, Freelance, Gift, Refund, Other].
+        *   \`purpose\`: (string) The merchant name, sender, or a brief, **human-readable** description (e.g., "Amazon Purchase", "Monthly Salary", "ATM Withdrawal"). Avoid cryptic abbreviations like "GBM".
     5.  **Output Format:** Your response MUST be a single, valid JSON object or the string \`null\`. Do not include any other text, explanations, or markdown formatting.
 
     **Examples:**
@@ -94,39 +97,27 @@ export const parseSmsExpense = async (sms: string): Promise<{ amount: number, ca
     **Your Output:**
     \`\`\`json
     {
+      "type": "expense",
       "amount": 46.00,
       "category": "General",
-      "purpose": "GBM"
+      "purpose": "GBM Transaction"
     }
     \`\`\`
 
-    **User Input:** "Transaction of INR 250 at STARBUCKS."
+    **User Input:** "Your account has been credited with $500 from your employer."
     **Your Output:**
     \`\`\`json
     {
-      "amount": 250,
-      "category": "Food",
-      "purpose": "Starbucks"
+      "type": "income",
+      "amount": 500,
+      "category": "Salary",
+      "purpose": "Payment from Employer"
     }
     \`\`\`
-
-    **User Input:** "Your account has been credited with $500."
-    **Your Output:**
-    null
-
+    
     **User Input:** "Your OTP for login is 123456."
     **Your Output:**
     null
-
-    **User Input:** "Thank you for spending $12.50 at The Corner Cafe."
-    **Your Output:**
-    \`\`\`json
-    {
-      "amount": 12.50,
-      "category": "Food",
-      "purpose": "The Corner Cafe"
-    }
-    \`\`\`
 
     **User Input to Analyze Now:**
     "${sms}"
@@ -145,10 +136,9 @@ export const parseSmsExpense = async (sms: string): Promise<{ amount: number, ca
             return null;
         }
 
-        // The model is now configured to return JSON directly.
         const parsedJson = JSON.parse(text);
 
-        if (parsedJson && typeof parsedJson.amount === 'number' && typeof parsedJson.category === 'string' && typeof parsedJson.purpose === 'string') {
+        if (parsedJson && (parsedJson.type === 'expense' || parsedJson.type === 'income') && typeof parsedJson.amount === 'number' && typeof parsedJson.category === 'string' && typeof parsedJson.purpose === 'string') {
             return parsedJson;
         }
         return null;
@@ -205,8 +195,18 @@ export const getPirateRiddle = async (usedRiddles: string[]): Promise<{ title: s
       "options": ["A Parrot", "A Map", "A Compass"],
       "answer": "A Map"
     }`;
-    const response = await safeGenerateContent(prompt);
-    return JSON.parse(response);
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: "application/json" },
+        });
+        const text = response.text.trim();
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Error generating pirate riddle:", error);
+        throw new Error("Failed to generate pirate riddle from Gemini.");
+    }
 };
 
 export const getFinancialQuest = async (usedScenarios: string[]): Promise<{ title: string, scenario: string, choices: { text: string, isCorrect: boolean, feedback: string }[] }> => {
@@ -222,8 +222,18 @@ export const getFinancialQuest = async (usedScenarios: string[]): Promise<{ titl
         { "text": "Invest in the sail.", "isCorrect": true, "feedback": "A wise choice! Improving your assets brings reliable returns." }
       ]
     }`;
-    const response = await safeGenerateContent(prompt);
-    return JSON.parse(response);
+     try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: "application/json" },
+        });
+        const text = response.text.trim();
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Error generating financial quest:", error);
+        throw new Error("Failed to generate financial quest from Gemini.");
+    }
 };
 
 export const getWordHint = async (word: string): Promise<string> => {
