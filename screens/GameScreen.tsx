@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType, ActiveMinigameState } from "../types"
 import { getPirateRiddle, getFinancialQuest, getWordHint } from "../services/geminiService"
@@ -460,8 +461,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [timerPhase, setTimerPhase] = useState<'reading' | 'answering' | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const [hasSeenTutorial, setHasSeenTutorial] = usePersistentState('hasSeenGameTutorial.v2', false);
-  const [tutorialState, setTutorialState] = useState({ isActive: false, step: 0 });
+  const [tutorialState, setTutorialState] = usePersistentState('gameTutorialState.v1', { isActive: false, step: 0, hasCompleted: false });
   
   const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   
@@ -486,24 +486,24 @@ const GameScreen: React.FC<GameScreenProps> = ({
   // Effect to manage the start of the game tutorial, ensuring it only begins
   // after the main app tutorial has concluded.
   useEffect(() => {
-    if (!isAppTutorialRunning && !hasSeenTutorial) {
+    if (!isAppTutorialRunning && !tutorialState.hasCompleted) {
       const startTimeout = setTimeout(() => {
-        setTutorialState({ isActive: true, step: 0 });
+        setTutorialState(prev => ({ ...prev, isActive: true }));
       }, 500); 
 
       return () => clearTimeout(startTimeout);
     }
-  }, [isAppTutorialRunning, hasSeenTutorial]);
+  }, [isAppTutorialRunning, tutorialState.hasCompleted, setTutorialState]);
 
   
   // Effect to advance tutorial based on game state changes (user actions)
   useEffect(() => {
     if (!tutorialState.isActive) return;
 
-    const currentStepConfig = tutorialConfig[tutorialState.step];
+    const currentStepConfig = tutorialConfig[tutorialState.step || 0];
     if (currentStepConfig.advancesBy !== 'action') return;
 
-    switch (tutorialState.step) {
+    switch (tutorialState.step || 0) {
       case 1: // Expecting shop to open
         if (isShopOpen) handleTutorialNext();
         break;
@@ -530,13 +530,12 @@ const GameScreen: React.FC<GameScreenProps> = ({
     if (nextStep >= tutorialConfig.length) {
         handleTutorialSkip();
     } else {
-        setTutorialState(prev => ({ ...prev, step: nextStep }));
+        setTutorialState(prev => ({ ...prev, step: nextStep, isActive: true }));
     }
   };
 
   const handleTutorialSkip = () => {
-    setTutorialState({ isActive: false, step: 0 });
-    setHasSeenTutorial(true);
+    setTutorialState({ isActive: false, step: 0, hasCompleted: true });
     onGameTutorialComplete();
   };
 
@@ -1162,15 +1161,15 @@ const GameScreen: React.FC<GameScreenProps> = ({
       {/* --- MODALS & TUTORIAL --- */}
       {tutorialState.isActive && (
         <TutorialHighlight
-            targetId={tutorialConfig[tutorialState.step].targetId}
-            title={tutorialConfig[tutorialState.step].title}
-            text={tutorialConfig[tutorialState.step].text}
-            step={tutorialState.step}
+            targetId={tutorialConfig[tutorialState.step || 0].targetId}
+            title={tutorialConfig[tutorialState.step || 0].title}
+            text={tutorialConfig[tutorialState.step || 0].text}
+            step={tutorialState.step || 0}
             totalSteps={tutorialConfig.length}
             onNext={handleTutorialNext}
             onSkip={handleTutorialSkip}
             isVoiceOverEnabled={gameState.isVoiceOverEnabled ?? true}
-            advancesBy={tutorialConfig[tutorialState.step].advancesBy}
+            advancesBy={tutorialConfig[tutorialState.step || 0].advancesBy}
         />
       )}
       {clearingCost && (

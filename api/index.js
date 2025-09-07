@@ -11,20 +11,26 @@ app.use(cors());
 app.use(express.json());
 
 // --- Gemini Setup ---
-if (!process.env.API_KEY) {
-  // This will cause the function to fail safely if the API key isn't set in Vercel
-  console.error("API_KEY environment variable is not set.");
+// Safely initialize the Gemini client.
+let ai = null;
+if (process.env.API_KEY) {
+  try {
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  } catch (error) {
+    console.error("Failed to initialize GoogleGenAI:", error);
+  }
+} else {
+  console.error("API_KEY environment variable is not set. API calls will fail.");
 }
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- API Endpoint ---
 app.post('/api/generate-insight', async (req, res) => {
+  // Check if the AI client is available on each request.
+  if (!ai) {
+    return res.status(500).json({ error: 'Server configuration error: The AI client is not initialized. Please check the API_KEY.' });
+  }
+
   try {
-    // Re-check for API key on each request in a serverless context
-    if (!process.env.API_KEY) {
-      return res.status(500).json({ error: 'Server configuration error: Missing API key.' });
-    }
-      
     const { expenses, moods, userProfile } = req.body;
 
     if (!expenses || !moods || !userProfile) {

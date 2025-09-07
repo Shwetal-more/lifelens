@@ -13,14 +13,26 @@ app.use(cors());
 app.use(express.json()); // Allow the server to understand JSON request bodies.
 
 // --- Gemini Setup ---
-if (!process.env.API_KEY) {
-  console.error("FATAL ERROR: API_KEY environment variable is not set.");
-  process.exit(1); // Exit if the API key is not configured.
+// Safely initialize the Gemini client.
+let ai = null;
+if (process.env.API_KEY) {
+  try {
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  } catch (error) {
+    console.error("Failed to initialize GoogleGenAI:", error);
+  }
+} else {
+  console.error("API_KEY environment variable not set. The /api/generate-insight endpoint will not work.");
 }
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 
 // --- API Endpoint ---
 app.post('/api/generate-insight', async (req, res) => {
+  // Check if the AI client is available on each request.
+  if (!ai) {
+    return res.status(500).json({ error: 'Server configuration error: The AI client is not initialized. Please check your .env file for API_KEY.' });
+  }
+
   try {
     const { expenses, moods, userProfile } = req.body;
 
@@ -53,4 +65,7 @@ app.post('/api/generate-insight', async (req, res) => {
 // --- Start Server ---
 app.listen(port, () => {
   console.log(`✅ LifeLens backend proxy is running on http://localhost:${port}`);
+  if (!ai) {
+    console.warn("⚠️  Warning: Gemini AI client not initialized. API calls will fail.");
+  }
 });

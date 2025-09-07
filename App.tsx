@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Screen, Expense, MoodEntry, Note, MoodType, Badge, AchievementType, UserProfile, FinancialGoal, AevumVault, SavingsTarget, ChatMessage, GameState, BrixComponent, PlacedBrix, Notification, NotificationType, Income } from './types';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -141,8 +142,8 @@ const App: React.FC = () => {
   const [weeklyInsight, setWeeklyInsight] = useState('');
   
   // --- Tutorial State ---
-  const [activeTutorial, setActiveTutorial] = useState<'app' | 'sms' | null>(null);
-  const [tutorialStep, setTutorialStep] = useState(0);
+  const [activeTutorial, setActiveTutorial] = usePersistentState<'app' | 'sms' | null>('activeTutorial', null);
+  const [tutorialStep, setTutorialStep] = usePersistentState('tutorialStep', 0);
 
   
   const insightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -586,7 +587,7 @@ const App: React.FC = () => {
     setActiveTutorial(null);
     setTutorialStep(0);
     speechService.cancel();
-  }, [activeTutorial, setHasSeenAppTutorial, setHasSeenSmsTutorial]);
+  }, [activeTutorial, setHasSeenAppTutorial, setHasSeenSmsTutorial, setActiveTutorial, setTutorialStep]);
   
   const handleTutorialNext = useCallback(() => {
       const tutorialConfig = activeTutorial === 'app' ? appTutorialSteps : smsImportTutorialSteps;
@@ -596,7 +597,7 @@ const App: React.FC = () => {
       } else {
           setTutorialStep(nextStepIndex);
       }
-  }, [activeTutorial, tutorialStep, endTutorial]);
+  }, [activeTutorial, tutorialStep, endTutorial, setTutorialStep]);
   
   const handleNavigation = (screen: Screen) => {
       const tutorialConfig = activeTutorial === 'app' ? appTutorialSteps : smsImportTutorialSteps;
@@ -620,7 +621,7 @@ const App: React.FC = () => {
       setActiveTutorial('sms');
       setTutorialStep(0);
     }
-  }, [hasSeenSmsTutorial]);
+  }, [hasSeenSmsTutorial, setActiveTutorial, setTutorialStep]);
 
   // --- Screen Rendering ---
   if (!isInitialized) {
