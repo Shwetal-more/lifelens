@@ -4,7 +4,6 @@
   "description": "LifeLens: Track your money, moods, and mindset.",
   "main": "index.js",
   "scripts": {
-    "build": "echo \"No build required, deploying static files.\"",
     "start": "vercel dev"
   },
   "dependencies": {
