@@ -166,13 +166,29 @@ export const getAffirmation = async (): Promise<string> => {
 };
 
 export const getWeeklySmsInsight = async (expenses: Expense[], moods: MoodEntry[], userProfile: UserProfile): Promise<string> => {
-    const prompt = `Analyze the user's weekly data.
-    User: ${userProfile.name}, ${userProfile.age} years old.
-    Expenses: ${JSON.stringify(expenses.map(e => ({ amount: e.amount, category: e.category, emotion: e.emotion })))}
-    Moods: ${JSON.stringify(moods.map(m => m.mood))}
-    
-    Provide a single, concise insight (max 20 words) that connects their spending to their mood. Be empathetic and constructive.`;
-    return safeGenerateContent(prompt);
+    try {
+        // The URL is now relative. The browser will resolve this to the same domain the app is hosted on.
+        // Vercel will then use the rewrite rule in vercel.json to direct this to our serverless function.
+        const response = await fetch(`/api/generate-insight`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ expenses, moods, userProfile }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Backend request failed with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.text;
+    } catch (error) {
+        console.error("Failed to fetch weekly insight from backend:", error);
+        // Return a user-friendly error message that will be displayed in the UI
+        return "Could not connect to the insight service. Please check your connection and try again.";
+    }
 };
 
 export const getSpendingNudge = async (amount: number, category: string, userProfile: UserProfile, goals: FinancialGoal[]): Promise<string> => {
