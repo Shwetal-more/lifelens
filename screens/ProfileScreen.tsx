@@ -103,8 +103,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ userProfile, settings, on
          <div className="bg-card p-4 rounded-2xl shadow-card">
             <div className="flex justify-between items-center">
                 <div>
-                    <p className="font-semibold">Automatic SMS Insights</p>
-                    <p className="text-sm text-secondary">Allow LifeLens to read financial SMS.</p>
+                    <p className="font-semibold">Weekly Insight Roundup</p>
+                    <p className="text-sm text-secondary">Get an AI-powered weekly summary in the app.</p>
                 </div>
                 <div className="relative inline-block w-10 mr-2 align-middle select-none">
                     <input 

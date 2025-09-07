@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
-import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType } from "../types"
+import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType, ActiveMinigameState } from "../types"
 import { getPirateRiddle, getFinancialQuest, getWordHint } from "../services/geminiService"
 import { speechService } from "../services/speechService"
 import {
@@ -159,29 +159,28 @@ const brixCatalog: BrixComponent[] = [
 const MAP_WIDTH = 20
 const MAP_HEIGHT = 20
 
-// Definitive Fix: New, playable map layout based on the user's "Treasure Map" image.
-// The starting area is now in the bottom-left and connected to the main island.
+// A new, single, connected island for better gameplay flow.
 const mapLayout = [
     "WWWWWWWWWWWWWWWWWWWW",
-    "WWWWWWLLLLLWWWWWWWWW",
-    "WWWWLLLLLLLLLWWWWWWW",
-    "WWWLLLLLLLLLLLLLWWWW",
-    "WWLLLLLLLLMLLLLLLWWW",
-    "WLLLLLLLLLLLLLLLLLWW",
-    "WLLLLLLLLLLLLLLLLLLW",
-    "WWLLLLLLLLLLLLLLLLWW",
-    "WWLLLLFFLLLLMLLLLLWW",
-    "WWLLLLFFLLLLLLLLLLWW",
-    "WWWLLLLLLLLLLLLLLLWW",
-    "WWLLMLLLLLLLLLLLLWWW",
-    "WWLLLLLLLLLLLLLLLLWW",
-    "WWLLLLLLLLLLLLLLLLWW",
-    "WWWLLLLLLLLLLMLLLLWW",
-    "WWWWLLLLLLLLLLLLLLWW",
-    "WWWWLLLLLLLLLLLLLLWW",
-    "WWLLWWWWWWWWWWWWWWWW",
-    "WWLLWWWWWWWWWWWWWWWW",
-    "WWHWWWWWWWWWWWWWWWWW",
+    "WWWWWWWWWWWWWWWWWWWW",
+    "WWWWWWWWLLLLWWWWWWWW",
+    "WWWWWWLLLFFLLLWWWWWW",
+    "WWWWWLLFFFFFLLWWWWWW",
+    "WWWWLLFFMFFFFFFLLWWW",
+    "WWWWLFFFFFFFFFFFLWWW",
+    "WWWLFFFFFFFFFFFFFLWW",
+    "WWWLFFFFFFFFFFFFFLWW",
+    "WWWLFFFFSFFFFFFFLWWW",
+    "WWWWLFFFFFFFFFFFLWWW",
+    "WWWWLLFFFFFFFFFLLWWW",
+    "WWWWWLLFFFFFLLWWWWWW",
+    "WWWWWWLLLLDLWWWWWWWW",
+    "WWWWWWWWLLLLWWWWWWWW",
+    "WWWWWWWWWLLWWWWWWWWW",
+    "WWWWWWWWWWLWWWWWWWWW",
+    "WWWWWWWWLL LWWWWWWWWW",
+    "WWWWWWWWWHWWWWWWWWWW",
+    "WWWWWWWWWWWWWWWWWWWW",
 ].join("").split("");
 
   
@@ -211,7 +210,7 @@ const getQuestForLandmark = (char: string): Quest | null => {
         description: "Skeleton tax collectors demand their due! Answer their riddles to pass.",
         reward: {
           doubloons: 150,
-          mapPieces: [{ x: 8, y: 7 }, { x: 9, y: 7 }, { x: 10, y: 7 }],
+          mapPieces: [{ x: 12, y: 13 }, { x: 11, y: 12 }],
           items: ["Debt Slayer Talisman"],
         },
         data: {
@@ -470,8 +469,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
   const [isHintLoading, setIsHintLoading] = useState(false);
   const HINT_COST = 25;
 
-  // Definitive Fix: Set viewport to the bottom-left corner of the map.
-  const [viewport, setViewport] = useState({ x: 0, y: 11 }); 
+  const [viewport, setViewport] = useState({ x: 5, y: 11 }); 
   const [showFullMapForTutorial, setShowFullMapForTutorial] = useState(false);
   const VIEWPORT_SIZE = 9;
 
@@ -834,11 +832,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
             const revealedSet = new Set(prevGameState.revealedCells.map(c => `${c.x},${c.y}`));
             (quest.reward.mapPieces || []).forEach(p => revealedSet.add(`${p.x},${p.y}`));
             
-            // --- Definitive Tile Reveal Logic ---
-            // 1. Find the "frontier": unrevealed land tiles adjacent to any revealed tile.
             const frontier = new Set<string>();
-            const clearedSet = new Set((prevGameState.clearedCells || []).map(c => `${c.x},${c.y}`));
-
             prevGameState.revealedCells.forEach(cell => {
                 const neighbors = [
                     { x: cell.x - 1, y: cell.y }, { x: cell.x + 1, y: cell.y },
@@ -847,11 +841,11 @@ const GameScreen: React.FC<GameScreenProps> = ({
                 neighbors.forEach(n => {
                     if (n.x >= 0 && n.x < MAP_WIDTH && n.y >= 0 && n.y < MAP_HEIGHT) {
                         const key = `${n.x},${n.y}`;
-                        if (!revealedSet.has(key)) { // Is it unrevealed?
+                        if (!revealedSet.has(key)) {
                             const mapIndex = n.y * MAP_WIDTH + n.x;
                             const terrain = mapLayout[mapIndex];
                             const isLand = "LFMSEXHBDIPGN".includes(terrain);
-                            if (isLand) { // Is it land?
+                            if (isLand) {
                                 frontier.add(key);
                             }
                         }
@@ -859,7 +853,6 @@ const GameScreen: React.FC<GameScreenProps> = ({
                 });
             });
 
-            // 2. Randomly select 2 tiles from the frontier to reveal.
             const bonusRevealCount = 2;
             const bonusReveals = Array.from(frontier).sort(() => 0.5 - Math.random()).slice(0, bonusRevealCount);
             bonusReveals.forEach(key => revealedSet.add(key));
@@ -900,28 +893,31 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
   
   const handleGetHint = async () => {
-      if (!currentQuest || !gameState.activeMinigameState || gameState.activeMinigameState.type !== 'hangman' || brixCoins < HINT_COST) return;
-      
-      const { progress, hangman } = gameState.activeMinigameState;
-      if (hangman?.hintUsed) return;
+    if (!currentQuest || !gameState.activeMinigameState || gameState.activeMinigameState.type !== 'hangman' || brixCoins < HINT_COST) return;
+    
+    const { progress, hangman } = gameState.activeMinigameState;
+    if (hangman?.hintUsed) return;
 
-      setIsHintLoading(true);
-      const word = currentQuest.data.words![progress];
-      const hintText = await getWordHint(word);
-      setHint(hintText);
-      setIsHintLoading(false);
+    setIsHintLoading(true);
+    const word = currentQuest.data.words![progress];
+    const hintText = await getWordHint(word);
+    setHint(hintText);
+    setIsHintLoading(false);
 
-      onUpdateGameState(gs => ({
-          ...gs,
-          spentBrixCoins: gs.spentBrixCoins + HINT_COST,
-          activeMinigameState: {
-              ...gs.activeMinigameState!,
-              hangman: {
-                  ...gs.activeMinigameState!.hangman!,
-                  hintUsed: true,
-              }
-          }
-      }));
+    onUpdateGameState(gs => {
+        if (gs.activeMinigameState?.type !== 'hangman') return gs;
+        return {
+            ...gs,
+            spentBrixCoins: gs.spentBrixCoins + HINT_COST,
+            activeMinigameState: {
+                ...gs.activeMinigameState,
+                hangman: {
+                    ...gs.activeMinigameState.hangman,
+                    hintUsed: true,
+                }
+            }
+        };
+    });
   }
 
   const handleQuestChoice = (choice: string | DecisionChoice) => {
@@ -968,10 +964,10 @@ const GameScreen: React.FC<GameScreenProps> = ({
       const { progress, hangman } = gameState.activeMinigameState;
       const word = currentQuest.data.words![progress];
       
-      if (hangman!.guessedLetters.includes(letter)) return;
+      if (hangman.guessedLetters.includes(letter)) return;
 
-      const newGuessedLetters = [...hangman!.guessedLetters, letter];
-      let newWrongGuesses = hangman!.wrongGuesses;
+      const newGuessedLetters = [...hangman.guessedLetters, letter];
+      let newWrongGuesses = hangman.wrongGuesses;
       
       if (!word.includes(letter)) {
           newWrongGuesses++;
@@ -1002,7 +998,20 @@ const GameScreen: React.FC<GameScreenProps> = ({
             setIsQuestOpen(false);
           }, 2500);
       } else {
-           onUpdateGameState(gs => ({...gs, activeMinigameState: {...gs.activeMinigameState!, hangman: { guessedLetters: newGuessedLetters, wrongGuesses: newWrongGuesses }}}));
+           onUpdateGameState(gs => {
+                if (gs.activeMinigameState?.type !== 'hangman') return gs;
+                return {
+                    ...gs, 
+                    activeMinigameState: {
+                        ...gs.activeMinigameState, 
+                        hangman: { 
+                            ...gs.activeMinigameState.hangman,
+                            guessedLetters: newGuessedLetters, 
+                            wrongGuesses: newWrongGuesses 
+                        }
+                    }
+                };
+           });
       }
   };
 
@@ -1069,7 +1078,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
             const isOcean = terrain === "W" || terrain === "D";
             const canPlace = isRevealed && (terrain === 'L' || isCleared) && !placed && placingBrixId;
 
-            const isTutorialCell = mapX === 2 && mapY === 18;
+            const isTutorialCell = mapX === 9 && mapY === 17;
             const cellId = isTutorialCell && !isFullMap ? 'tutorial-place-cell' : undefined;
 
             cells.push(
@@ -1252,40 +1261,43 @@ const GameScreen: React.FC<GameScreenProps> = ({
                       ))}
                   </div>
               )}
-              {currentQuest.type === 'hangman' && gameState.activeMinigameState?.hangman && (
-                  <div className="text-center">
-                      <HangmanFigure wrongGuesses={gameState.activeMinigameState.hangman.wrongGuesses} />
-                      <p className="text-sm text-center font-bold text-primary my-2">Word {gameState.activeMinigameState.progress + 1} of {currentQuest.data.words!.length}</p>
-                       <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center text-primary">
-                          {currentQuest.data.words![gameState.activeMinigameState.progress].split('').map((char, i) => (
-                              <span key={i} className="inline-block w-8 border-b-4 border-primary/50">{gameState.activeMinigameState!.hangman!.guessedLetters.includes(char) ? char : '\u00A0'}</span>
-                          ))}
+              {currentQuest.type === 'hangman' && gameState.activeMinigameState?.type === 'hangman' && (() => {
+                  const hangmanState = gameState.activeMinigameState;
+                  return (
+                      <div className="text-center">
+                          <HangmanFigure wrongGuesses={hangmanState.hangman.wrongGuesses} />
+                          <p className="text-sm text-center font-bold text-primary my-2">Word {hangmanState.progress + 1} of {currentQuest.data.words!.length}</p>
+                           <div className="my-4 tracking-[0.5em] text-3xl font-bold text-center text-primary">
+                              {currentQuest.data.words![hangmanState.progress].split('').map((char, i) => (
+                                  <span key={i} className="inline-block w-8 border-b-4 border-primary/50">{hangmanState.hangman.guessedLetters.includes(char) ? char : '\u00A0'}</span>
+                              ))}
+                          </div>
+                          <div className="min-h-[4rem] flex items-center justify-center flex-col">
+                            {hint && <p className="text-sm text-secondary italic mb-2 p-2 bg-background rounded-md">Hint: "{hint}"</p>}
+                            <button 
+                                onClick={handleGetHint} 
+                                disabled={isHintLoading || hangmanState.hangman.hintUsed || brixCoins < HINT_COST} 
+                                className="text-sm bg-accent/20 text-accent-dark font-bold py-2 px-4 rounded-full mb-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group"
+                            >
+                              💡 
+                              {isHintLoading 
+                                ? "Thinking..." 
+                                : hangmanState.hangman.hintUsed 
+                                ? "Hint Used" 
+                                : `Get Hint (-${HINT_COST})`}
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mt-2">
+                              {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
+                                  <button key={letter} onClick={() => handleHangmanGuess(letter)} disabled={hangmanState.hangman.guessedLetters.includes(letter)}
+                                      className="w-8 h-8 font-bold bg-background rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-background/80 transition-colors">
+                                      {letter}
+                                  </button>
+                              ))}
+                          </div>
                       </div>
-                      <div className="min-h-[4rem] flex items-center justify-center flex-col">
-                        {hint && <p className="text-sm text-secondary italic mb-2 p-2 bg-background rounded-md">Hint: "{hint}"</p>}
-                        <button 
-                            onClick={handleGetHint} 
-                            disabled={isHintLoading || gameState.activeMinigameState.hangman.hintUsed || brixCoins < HINT_COST} 
-                            className="text-sm bg-accent/20 text-accent-dark font-bold py-2 px-4 rounded-full mb-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 group"
-                        >
-                          💡 
-                          {isHintLoading 
-                            ? "Thinking..." 
-                            : gameState.activeMinigameState.hangman.hintUsed 
-                            ? "Hint Used" 
-                            : `Get Hint (-${HINT_COST})`}
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-1 sm:gap-2 justify-center mt-2">
-                          {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(letter => (
-                              <button key={letter} onClick={() => handleHangmanGuess(letter)} disabled={gameState.activeMinigameState!.hangman!.guessedLetters.includes(letter)}
-                                  className="w-8 h-8 font-bold bg-background rounded disabled:bg-gray-300 disabled:text-gray-500 hover:bg-background/80 transition-colors">
-                                  {letter}
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-              )}
+                  )
+              })()}
             </div>
           </div>
         )}

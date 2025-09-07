@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserProfile, FinancialGoal, NotificationType, Screen } from '../types';
 import { getSpendingNudge } from '../services/geminiService';
@@ -52,8 +51,8 @@ const SpendingCheckScreen: React.FC<SpendingCheckScreenProps> = ({ userProfile, 
         ruleMet = true;
       }
       
-      // Rule 2: General store over 100 INR
-      if (userProfile.currency === 'INR' && lowerCaseCategory.includes('general') && numericAmount > 100) {
+      // Rule 2: General store over 100 in user's currency
+      if (lowerCaseCategory.includes('general') && numericAmount > 100) {
         ruleMet = true;
       }
 

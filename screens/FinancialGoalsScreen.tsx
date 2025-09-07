@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { FinancialGoal, Screen, UserProfile } from '../types';
 

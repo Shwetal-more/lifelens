@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Expense, MoodEntry, UserProfile, MoodType } from '../types';
 import { getMoodTip, getFinancialInsight } from '../services/geminiService';
 import InsightChart from '../components/InsightChart';
@@ -65,6 +63,8 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
   
   const allCategories = useMemo(() => Array.from(new Set(expenses.map(e => e.category))), [expenses]);
 
+  const insightDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     setSelectedCategories(allCategories);
   }, [allCategories]);
@@ -90,18 +90,27 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
   }, [moods, period]);
 
   useEffect(() => {
-    const fetchInsight = async () => {
-      setIsLoadingInsight(true);
-      const result = await getFinancialInsight(filteredExpenses);
-      setInsight(result);
-      setIsLoadingInsight(false);
-    };
-    if (filteredExpenses.length > 0) {
-        fetchInsight();
-    } else {
-        setInsight("Not enough data for this period/filter. Keep tracking!");
-        setIsLoadingInsight(false);
+    if (insightDebounceRef.current) {
+        clearTimeout(insightDebounceRef.current);
     }
+    
+    setIsLoadingInsight(true);
+
+    insightDebounceRef.current = setTimeout(async () => {
+        if (filteredExpenses.length > 0) {
+            const result = await getFinancialInsight(filteredExpenses);
+            setInsight(result);
+        } else {
+            setInsight("Not enough data for this period/filter. Keep tracking!");
+        }
+        setIsLoadingInsight(false);
+    }, 500); // 500ms debounce delay
+
+    return () => {
+        if (insightDebounceRef.current) {
+            clearTimeout(insightDebounceRef.current);
+        }
+    };
   }, [filteredExpenses]);
   
   const handleSelectMood = async (mood: MoodType) => {
@@ -152,7 +161,7 @@ const InnerCompassScreen: React.FC<InnerCompassScreenProps> = ({ expenses, moods
         ) : (
           <>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-              {Object.values(MoodType).map(mood => (
+              {Object.values(MoodType).map((mood) => (
                 <MoodButton key={mood} mood={mood} onSelect={handleSelectMood} isSelected={selectedMood === mood} />
               ))}
             </div>

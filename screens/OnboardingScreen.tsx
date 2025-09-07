@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 
@@ -35,6 +36,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
   };
   
   const handleNextStep = () => {
+    if (step === 1 && name.trim() === '') return;
+    if (step === 2 && (parseInt(age, 10) <= 0 || isNaN(parseInt(age, 10)))) return;
     setStep(s => Math.min(totalSteps, s + 1))
   };
 
@@ -97,11 +100,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveProfile }) =>
           
           {/* Step 4: SMS */}
           <div className={step === 4 ? 'block text-center animate-fade-in' : 'hidden'}>
-            <h2 className="text-xl font-bold text-primary mb-2">Automate Your Insights</h2>
-            <p className="text-secondary mb-6 text-sm">Allow LifeLens to read financial SMS messages to automatically generate insights and track your spending. Your data is processed securely and never shared.</p>
+            <h2 className="text-xl font-bold text-primary mb-2">Get Weekly Insights</h2>
+            <p className="text-secondary mb-6 text-sm">Opt-in to receive a weekly, AI-powered summary of your spending and moods, delivered right to your home screen. It's like a friendly text message from your financial assistant!</p>
             <div className="space-y-3">
                 <button onClick={() => handleSave(true)} className="w-full bg-accent text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-accent-dark transform hover:-translate-y-0.5 transition-all">
-                    Enable Automatic Insights
+                    Enable Weekly Roundup
                 </button>
                 <button onClick={() => handleSave(false)} className="w-full text-sm text-secondary font-semibold py-2">
                     Maybe Later

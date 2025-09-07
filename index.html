@@ -5,25 +5,27 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LifeLens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              'background': '#F0F7F9', // Light Blueish-Grey
-              'card': '#FFFFFF',         // White
-              'primary': '#2C3E50',       // Very Dark Blue (for text and important elements)
-              'secondary': '#8A9BA8',   // Muted Grey (for subtext)
-              'accent': '#1DE9B6',       // Vibrant Teal/Green
-              'accent-dark': '#00BFA5',
-              'light-shadow': 'rgba(0, 0, 0, 0.05)',
+              'background': '#F8F9FA', // Soft Off-White
+              'card': '#FFFFFF',       // Pure White
+              'primary': '#2C3E50',     // Dark Slate Blue (for text)
+              'secondary': '#7F8C8D',   // Muted Grey (for subtext)
+              'accent': '#1ABC9C',     // Vibrant Teal
+              'accent-dark': '#16A085',
+              'light-shadow': 'rgba(44, 62, 80, 0.1)',
               'white-soft': '#F8F9FA',
             },
             boxShadow: {
-              'soft': '8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff',
-              'soft-inset': 'inset 8px 8px 16px #d1d9e6, inset -8px -8px 16px #ffffff',
-              'card': '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+              'card': '0 10px 25px -5px rgba(44, 62, 80, 0.1), 0 8px 10px -6px rgba(44, 62, 80, 0.08)',
+              'soft-inset': 'inset 3px 3px 6px #e6e9ed, inset -3px -3px 6px #ffffff',
             }
           },
         },
@@ -38,12 +40,34 @@
         -webkit-text-size-adjust: 100%;
         text-size-adjust: 100%;
       }
+      body {
+        font-family: 'Inter', sans-serif;
+      }
       .hide-scrollbar {
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
       }
       .hide-scrollbar::-webkit-scrollbar {
         display: none; /* Chrome, Safari and Opera */
+      }
+      @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+          animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      @keyframes cardPopIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+      }
+      .animate-card-pop-in {
+          animation: cardPopIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      button, a, .cursor-pointer {
+          transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          transition-duration: 200ms;
       }
     </style>
   <script type="importmap">

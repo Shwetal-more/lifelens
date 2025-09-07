@@ -31,7 +31,8 @@ const SpendingBreakdownChart: React.FC<SpendingBreakdownChartProps> = ({ expense
         return acc;
     }, {} as { [key: string]: { date: string, essential: number, indulgence: number } });
 
-    const chartData = Object.values(processedData).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // FIX: Explicitly type the arguments of the sort function to resolve the 'unknown' type error.
+    const chartData = Object.values(processedData).sort((a: { date: string }, b: { date: string }) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return (
         <div className="w-full h-64">

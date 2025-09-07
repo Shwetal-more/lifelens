@@ -1,25 +1,33 @@
-// FIX: Removed self-import of `Screen` which was causing a conflict with its local declaration.
 export enum Screen {
-  Welcome = 'WELCOME',
-  SignUpLogin = 'SIGNUP_LOGIN',
-  Onboarding = 'ONBOARDING',
-  Home = 'HOME',
-  AddExpense = 'ADD_EXPENSE',
-  AddIncome = 'ADD_INCOME',
-  InnerCompass = 'INNER_COMPASS',
-  Notes = 'NOTES',
-  Profile = 'PROFILE',
-  FinancialGoals = 'FINANCIAL_GOALS',
-  AddFinancialGoal = 'ADD_FINANCIAL_GOAL',
-  Achievements = 'ACHIEVEMENTS',
-  AevumVault = 'AEVUM_VAULT',
-  SetVaultWish = 'SET_VAULT_WISH',
-  VaultRevealed = 'VAULT_REVEALED',
-  Game = 'GAME',
-  Chat = 'CHAT',
-  SpendingCheck = 'SPENDING_CHECK',
-  PrivacyPolicy = 'PRIVACY_POLICY',
-  SmsImport = 'SMS_IMPORT',
+  Welcome = 'welcome',
+  SignUpLogin = 'signup_login',
+  Onboarding = 'onboarding',
+  Home = 'home',
+  InnerCompass = 'inner_compass',
+  Game = 'game',
+  FinancialGoals = 'financial_goals',
+  AddFinancialGoal = 'add_financial_goal',
+  Profile = 'profile',
+  AddExpense = 'add_expense',
+  AddIncome = 'add_income',
+  Notes = 'notes',
+  SmsImport = 'sms_import',
+  SpendingCheck = 'spending_check',
+  Achievements = 'achievements',
+  PrivacyPolicy = 'privacy_policy',
+  AevumVault = 'aevum_vault',
+  SetVaultWish = 'set_vault_wish',
+  VaultRevealed = 'vault_revealed',
+  Chat = 'chat',
+}
+
+export interface UserProfile {
+  name: string;
+  email?: string;
+  phone?: string;
+  age: number;
+  currency: 'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY';
+  smsEnabled: boolean;
 }
 
 export enum MoodType {
@@ -28,68 +36,45 @@ export enum MoodType {
   Stressed = 'Stressed',
   Excited = 'Excited',
   Neutral = 'Neutral',
-  Anxious = 'Anxious'
-}
-
-export enum AchievementType {
-  FIRST_WEEK_STREAK = 'FIRST_WEEK_STREAK',
-  MINDFUL_SPENDER = 'MINDFUL_SPENDER',
-  MOOD_MASTER = 'MOOD_MASTER',
-}
-
-export interface Badge {
-  id: AchievementType;
-  name: string;
-  description: string;
-  unlocked: boolean;
-  date?: string; 
-}
-
-export interface UserProfile {
-  name: string;
-  age: number;
-  currency: 'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY';
-  smsEnabled: boolean;
-  email?: string;
-  phone?: string;
+  Anxious = 'Anxious',
 }
 
 export interface Expense {
   id: string;
+  date: Date;
   amount: number;
   category: string;
   occasion: string;
   emotion: MoodType;
-  date: Date;
   isUseful: boolean;
-}
-
-export interface Income {
-  id: string;
-  amount: number;
-  source: string;
-  date: Date;
 }
 
 export interface MoodEntry {
   id: string;
-  mood: MoodType;
   date: Date;
+  mood: MoodType;
   reason?: string;
 }
 
-export interface Note {
+export interface Income {
   id: string;
-  content: string;
   date: Date;
+  amount: number;
+  source: string;
+}
+
+export interface Note {
+    id: string;
+    date: Date;
+    content: string;
 }
 
 export interface FinancialGoal {
-  id: string;
+  id:string;
   name: string;
+  icon: string;
   targetAmount: number;
   savedAmount: number;
-  icon: string;
   targetDate: string;
   isNorthStar?: boolean;
 }
@@ -101,8 +86,16 @@ export interface AevumVault {
 }
 
 export interface SavingsTarget {
-    amount: number;
-    period: 'weekly' | 'monthly';
+  amount: number;
+  period: 'monthly' | 'yearly';
+}
+
+export type NotificationType = 'success' | 'error' | 'warning' | 'info';
+
+export interface Notification {
+    id: number;
+    message: string;
+    type: NotificationType;
 }
 
 export interface ChatMessage {
@@ -111,96 +104,94 @@ export interface ChatMessage {
   date: Date;
 }
 
-// Types for Pirate's Legacy Game
+export enum AchievementType {
+  FIRST_WEEK_STREAK = 'first_week_streak',
+  MINDFUL_SPENDER = 'mindful_spender',
+  MOOD_MASTER = 'mood_master',
+}
+
+export interface Badge {
+  id: string | AchievementType;
+  name: string;
+  description: string;
+  unlocked: boolean;
+  date?: string | null;
+}
+
+// --- Game Types ---
+
 export interface BrixComponent {
   id: string;
   name: string;
   cost: number;
-  asset: string; // Emoji or identifier for visual
-  size: { width: number; height: number }; // In grid units
+  asset: string; // emoji or SVG string
+  size: { width: number; height: number };
   financialTip: string;
 }
 
 export interface PlacedBrix {
-  instanceId: string; // Uniquely identifies each placed item
+  instanceId: string;
   brixId: string;
   x: number;
   y: number;
 }
 
-export interface UserBrix {
-  brixId: string;
-  quantity: number; // How many are in inventory, unplaced
-}
-
-interface RiddleData {
-    question: string;
-    options: string[];
-    answer: string;
-}
-
-export interface HangmanData {
-    words: string[];
-    rewardCoins?: number;
+export interface DecisionChoice {
+  text: string;
+  isCorrect: boolean;
+  feedback: string;
 }
 
 export interface RiddleChallengeData {
-    riddles: RiddleData[];
+  riddles: { question: string; answer: string; options: string[] }[];
 }
-
-// FIX: Exported DecisionChoice interface so it can be imported in other files.
-export interface DecisionChoice {
-    text: string;
-    isCorrect: boolean;
-    feedback: string;
-}
-
-interface DecisionData {
-    scenario: string;
-    choices: DecisionChoice[];
-}
-
 
 export interface Quest {
-    id: string;
-    type: 'riddle' | 'decision' | 'hangman' | 'riddle_challenge';
-    title: string;
-    description: string;
-    isCompleted: boolean;
-    reward: {
-        doubloons: number;
-        mapPieces: {x: number, y: number}[];
-        items?: string[];
-    };
-    data: Partial<RiddleData & DecisionData & HangmanData & RiddleChallengeData>;
+  id: string;
+  type: "riddle" | "decision" | "hangman" | "riddle_challenge";
+  title: string;
+  description: string;
+  reward: {
+    doubloons?: number;
+    mapPieces?: { x: number; y: number }[];
+    items?: string[];
+  };
+  data: {
+      question?: string;
+      answer?: string;
+      options?: string[];
+      scenario?: string;
+      choices?: DecisionChoice[];
+      words?: string[];
+      rewardCoins?: number;
+      riddles?: { question: string; answer: string; options: string[] }[];
+  };
+  isCompleted: boolean;
 }
+
+export type ActiveMinigameState = {
+    type: 'hangman';
+    progress: number;
+    hangman: {
+        guessedLetters: string[];
+        wrongGuesses: number;
+        hintUsed?: boolean;
+    };
+} | {
+    type: 'riddle_challenge';
+    progress: number;
+};
 
 export interface GameState {
   spentBrixCoins: number;
-  inventory: UserBrix[];
+  inventory: { brixId: string; quantity: number }[];
   placedBrix: PlacedBrix[];
-  revealedCells: {x: number, y: number}[];
-  clearedCells?: {x: number, y: number}[];
+  revealedCells: { x: number; y: number }[];
+  clearedCells?: { x: number; y: number }[];
   quests: Quest[];
+  activeMinigameState?: ActiveMinigameState | null;
   questCooldownUntil?: number;
   questsCompletedSinceCooldown?: number;
   isVoiceOverEnabled?: boolean;
-  specialItems?: string[]; // To store talisman, etc.
-  activeMinigameState?: { // To hold progress for multi-stage quests
-      type: 'hangman' | 'riddle_challenge';
-      progress: number; // e.g., wordIndex or riddleIndex
-      hangman?: {
-          guessedLetters: string[];
-          wrongGuesses: number;
-          hintUsed?: boolean;
-      }
-  } | null;
-}
-
-export type NotificationType = 'success' | 'error' | 'warning' | 'info';
-
-export interface Notification {
-  id: number;
-  message: string;
-  type: NotificationType;
+  specialItems?: string[];
 }

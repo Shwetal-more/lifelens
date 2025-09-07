@@ -1,19 +1,20 @@
+
 import React, { useState } from 'react';
 import { Screen, NotificationType } from '../types';
 import { parseSmsExpense } from '../services/geminiService';
 
 interface SmsImportScreenProps {
   onNavigate: (screen: Screen) => void;
-  onPrepareExpense: (data: { amount: string, category: string }) => void;
+  onPrepareExpense: (data: { amount: string, category: string, purpose: string }) => void;
   addNotification: (message: string, type: NotificationType) => void;
 }
 
 const SmsImportScreen: React.FC<SmsImportScreenProps> = ({ onNavigate, onPrepareExpense, addNotification }) => {
   const [smsContent, setSmsContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [parsedData, setParsedData] = useState<{ amount: number; category: string } | null>(null);
+  const [parsedData, setParsedData] = useState<{ amount: number; category: string; purpose: string } | null>(null);
   
-  const exampleSms = "You've spent INR 250.00 on your card ending in 1234 at STARBUCKS.";
+  const exampleSms = "Your SB A/c *8889 Debited for Rs.46.00 on 04-09-2025 11:57:33 by GBM Avl Bal Rs.49586.64 -Union Bank of India";
 
   const handleAnalyze = async () => {
     if (!smsContent.trim()) {
@@ -38,6 +39,7 @@ const SmsImportScreen: React.FC<SmsImportScreenProps> = ({ onNavigate, onPrepare
       onPrepareExpense({
         amount: parsedData.amount.toString(),
         category: parsedData.category,
+        purpose: parsedData.purpose,
       });
     }
   };
@@ -67,6 +69,7 @@ const SmsImportScreen: React.FC<SmsImportScreenProps> = ({ onNavigate, onPrepare
           <div className="bg-green-50 p-4 rounded-2xl shadow-card text-center animate-fade-in">
             <h2 className="text-lg font-bold text-green-800">Analysis Complete!</h2>
             <p className="text-2xl font-bold text-primary my-3">{parsedData.amount.toFixed(2)}</p>
+            <p className="text-md text-secondary">Purpose: <span className="font-semibold text-primary">{parsedData.purpose}</span></p>
             <p className="text-md text-secondary">Suggested Category: <span className="font-semibold text-primary">{parsedData.category}</span></p>
             <button
               onClick={handleCreateExpense}

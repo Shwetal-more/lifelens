@@ -27,6 +27,7 @@ import { usePersistentState } from './hooks/usePersistentState';
 import { sendNotification } from './services/notificationService';
 import TutorialHighlight from './components/TutorialHighlight';
 import { auth } from './services/firebase';
+import { initialBadges } from './services/badgeService';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -51,20 +52,13 @@ interface AppSettings {
     savingsTarget: SavingsTarget;
 }
 
-const initialAchievements: Badge[] = [
-  { id: AchievementType.FIRST_WEEK_STREAK, name: 'First Week Streak', 'description': 'Maintain a 7-day streak.', unlocked: false },
-  { id: AchievementType.MINDFUL_SPENDER, name: 'Mindful Spender', 'description': 'Log 5 expenses in a single day.', unlocked: false },
-  { id: AchievementType.MOOD_MASTER, name: 'Mood Master', 'description': 'Log your mood for 7 consecutive days.', unlocked: false },
-];
-
 const COIN_CONVERSION_RATE = 2; // 1 currency unit = 2 Doubloons
 
-// Helper function to calculate initially revealed land cells
+// Helper function to calculate initially revealed land cells for the new map
 const getInitialRevealedCells = () => {
-    // Definitive Fix: Reveal the shipwreck and the correct adjacent land tile on the new bottom-left map area.
     return [
-        { x: 2, y: 19 }, // Shipwreck 'H'
-        { x: 2, y: 18 }, // The one starting land tile 'L'
+        { x: 9, y: 18 }, // New Shipwreck 'H' location
+        { x: 9, y: 17 }, // Adjacent starting land tile 'L'
     ];
 };
 
@@ -145,7 +139,7 @@ const App: React.FC = () => {
     isVoiceOverEnabled: true,
     clearedCells: [],
   });
-  const [achievements, setAchievements] = usePersistentState<Badge[]>('achievements', initialAchievements);
+  const [achievements, setAchievements] = usePersistentState<Badge[]>('achievements', initialBadges);
   const [settings, setSettings] = usePersistentState<AppSettings>('appSettings', {
     notifications: { enabled: false, time: '19:00' },
     savingsTarget: { amount: 500, period: 'monthly' }
@@ -159,7 +153,7 @@ const App: React.FC = () => {
   // --- Volatile App State ---
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [pendingExpenseData, setPendingExpenseData] = useState<{ amount: string, category: string } | null>(null);
+  const [pendingExpenseData, setPendingExpenseData] = useState<{ amount: string, category: string, purpose: string } | null>(null);
   const [streak, setStreak] = useState(1);
   const [pendingGoalForWish, setPendingGoalForWish] = useState<Omit<FinancialGoal, 'id'> | null>(null);
   const [revealedGoal, setRevealedGoal] = useState<FinancialGoal | null>(null);
@@ -269,10 +263,10 @@ const App: React.FC = () => {
 
         if (streak >= 7) unlockBadge(AchievementType.FIRST_WEEK_STREAK);
 
-        const todayExpensesCount = expenses.filter(e => isSameDay(new Date(), e.date)).length;
+        const todayExpensesCount = expenses.filter(e => isSameDay(new Date(), new Date(e.date))).length;
         if (todayExpensesCount >= 5) unlockBadge(AchievementType.MINDFUL_SPENDER);
         
-        const uniqueMoodDays = [...new Set(moods.map(m => m.date.toDateString()))].map(d => new Date(d));
+        const uniqueMoodDays = [...new Set(moods.map(m => new Date(m.date).toDateString()))].map(d => new Date(d));
         if (uniqueMoodDays.length >= 7) {
             let consecutiveDays = 0;
             let checkDate = new Date();
@@ -509,7 +503,7 @@ const App: React.FC = () => {
     setCurrentScreen(Screen.Home);
   };
 
-  const handlePrepareExpense = (data: { amount: string, category: string }) => {
+  const handlePrepareExpense = (data: { amount: string, category: string, purpose: string }) => {
     setPendingExpenseData(data);
     setCurrentScreen(Screen.AddExpense);
   };
@@ -642,7 +636,7 @@ const App: React.FC = () => {
       case Screen.Onboarding:
         return <OnboardingScreen onSaveProfile={handleSaveProfile} />;
       case Screen.Home:
-        return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
+        return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={() => handleNavigateToChat('general')} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
       case Screen.AddExpense:
         return <AddExpenseScreen userProfile={userProfile} onSave={saveExpense} onCancel={() => { setEditingExpenseId(null); setCurrentScreen(Screen.Home); }} onDelete={deleteExpense} expenseToEdit={expenseToEdit} expenses={expenses} goals={goals} addNotification={addNotification} pendingData={pendingExpenseData} onClearPendingData={() => setPendingExpenseData(null)} />;
       case Screen.AddIncome:
@@ -667,7 +661,7 @@ const App: React.FC = () => {
         if (revealedGoal && aevumVault) {
             return <VaultRevealedScreen goal={revealedGoal} message={aevumVault.message} onDone={handleCloseVault} />;
         }
-        return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
+        return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={() => handleNavigateToChat('general')} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
       case Screen.Game:
         const currentTutorialStepId = appTutorialState.isActive ? appTutorialConfig[appTutorialState.step].targetId : null;
         return <GameScreen brixCoins={brixCoins} gameState={gameState} onUpdateGameState={setGameState} onPurchaseBrix={handlePurchaseBrix} onPlaceBrix={handlePlaceBrix} onNavigateToChat={handleNavigateToChat} userName={userProfile?.name || 'Explorer'} addNotification={addNotification} isAppTutorialRunning={appTutorialState.isActive} appTutorialStepId={currentTutorialStepId} />;
@@ -680,7 +674,7 @@ const App: React.FC = () => {
       case Screen.SmsImport:
         return <SmsImportScreen onNavigate={setCurrentScreen} onPrepareExpense={handlePrepareExpense} addNotification={addNotification} />;
       default:
-        return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={handleNavigateToChat} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
+        return <HomeScreen userProfile={userProfile} expenses={expenses} income={income} onNavigate={setCurrentScreen} onNavigateToChat={() => handleNavigateToChat('general')} onEditExpense={handleStartEditExpense} streak={streak} aevumVault={aevumVault} dailyWhisper={dailyWhisper} totalSaved={totalSaved} showConfetti={showConfetti} weeklyInsight={weeklyInsight} savingsTarget={settings.savingsTarget} />;
     }
   };
   

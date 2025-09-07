@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from '../types';
 
@@ -58,7 +57,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ history, onSendMessage, onCance
             </div>
           </div>
         ))}
-        {isLoading && (
+        {isLoading && history[history.length - 1]?.role !== 'model' && (
             <div className="flex items-end gap-2 justify-start">
                 <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0">AI</div>
                  <div className="max-w-xs md:max-w-md p-3 rounded-2xl bg-card text-primary rounded-bl-lg">

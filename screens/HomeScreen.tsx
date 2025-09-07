@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Expense, Screen, UserProfile, AevumVault, SavingsTarget, Income } from '../types';
 
@@ -41,7 +42,7 @@ interface HomeScreenProps {
   expenses: Expense[];
   income: Income[];
   onNavigate: (screen: Screen) => void;
-  onNavigateToChat: (context: 'general' | 'game') => void;
+  onNavigateToChat: () => void;
   onEditExpense: (id: string) => void;
   streak: number;
   aevumVault: AevumVault | null;
@@ -144,7 +145,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
       { userProfile && userProfile.age > 0 && (
          <button
             id="tutorial-ai-chat-button"
-            onClick={() => onNavigateToChat('general')}
+            onClick={() => onNavigateToChat()}
             className="fixed bottom-28 right-4 bg-primary text-white rounded-full p-4 shadow-lg transform hover:scale-110 transition-transform z-40"
             aria-label="Open AI Assistant"
          >
@@ -244,13 +245,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ userProfile, expenses, income, 
         )}
       </div>
       
-      {weeklyInsight && (
+      {userProfile?.smsEnabled && weeklyInsight && (
         <div className="bg-card p-5 rounded-2xl shadow-card">
           <h3 className="font-bold text-lg text-primary flex items-center gap-2">
-            Weekly SMS Roundup
+            Weekly Roundup
           </h3>
           <p className="text-secondary text-md mt-2 italic">"{weeklyInsight}"</p>
-          <p className="text-xs text-right text-gray-400 mt-2">via LifeLens SMS</p>
+          <p className="text-xs text-right text-gray-400 mt-2">Your Weekly AI Roundup</p>
         </div>
       )}
 

@@ -4,7 +4,7 @@ const LogoIcon = ({ className }: { className?: string }) => (
     <svg className={className} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#1DE9B6" />
+                <stop offset="0%" stopColor="#1ABC9C" /> 
                 <stop offset="100%" stopColor="#2C3E50" />
             </linearGradient>
             <clipPath id="apertureClip">
@@ -17,7 +17,7 @@ const LogoIcon = ({ className }: { className?: string }) => (
                  <circle key={angle} cx="50" cy="50" r="45" fill="url(#logoGradient)" clipPath="url(#apertureClip)" transform={`rotate(${angle}, 50, 50)`} />
             ))}
         </g>
-        <circle cx="50" cy="50" r="10" fill="#F0F7F9" />
+        <circle cx="50" cy="50" r="10" fill="#2C3E50" />
     </svg>
 );
 
@@ -57,7 +57,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
       <div className="w-full pb-8 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
         <button
           onClick={onNavigate}
-          className="w-full bg-card text-primary font-bold py-4 px-8 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 ease-in-out"
+          className="w-full bg-primary text-white font-bold py-4 px-8 rounded-2xl shadow-card hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300 ease-in-out"
         >
           Get Started
         </button>

@@ -1,8 +1,8 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Expense, MoodType, UserProfile, FinancialGoal, NotificationType } from '../types';
 import { getEmotionalSpendingInsight, getMindfulSpendingPrompt, getPostPurchaseReassurance } from '../services/geminiService';
+import Modal from '../components/Modal';
 
 interface AddExpenseScreenProps {
   userProfile: UserProfile | null;
@@ -13,7 +13,7 @@ interface AddExpenseScreenProps {
   expenses: Expense[];
   goals: FinancialGoal[];
   addNotification: (message: string, type: NotificationType) => void;
-  pendingData?: { amount: string, category: string } | null;
+  pendingData?: { amount: string, category: string, purpose: string } | null;
   onClearPendingData: () => void;
 }
 
@@ -60,13 +60,14 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     if(pendingData && !isEditMode) {
       setAmount(pendingData.amount);
       setCategory(pendingData.category);
+      setOccasion(pendingData.purpose);
       onClearPendingData();
     }
   }, [pendingData, isEditMode, onClearPendingData]);
 
   const processAndShowInsight = async (expenseData: Omit<Expense, 'id' | 'date'>) => {
     setIsLoading(true);
-    const insight = await getEmotionalSpendingInsight(expenseData, expenses);
+    const insight = await getEmotionalSpendingInsight(expenseData);
     setAiInsight(insight);
     setIsShowingInsight(true);
     setIsLoading(false);
@@ -85,7 +86,6 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     
     setPendingExpense(expenseData);
 
-    // The mindful spending prompt should only appear for new indulgent expenses.
     if (!isUseful && !isEditMode) {
       setIsLoading(true);
       const prompt = await getMindfulSpendingPrompt(expenseData, goals);
@@ -94,7 +94,6 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
       return; 
     }
     
-    // Show insight for both new and edited expenses.
     await processAndShowInsight(expenseData);
   };
 
@@ -118,7 +117,6 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
 
   const handleFinalizeSave = () => {
     if (pendingExpense) {
-      // Only show post-purchase reassurance for NEW indulgent expenses
       if (!pendingExpense.isUseful && !isEditMode) {
         getPostPurchaseReassurance(pendingExpense, goals.length > 0 ? goals[0] : null)
           .then(reassurance => addNotification(reassurance, 'info'));
@@ -127,14 +125,12 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
     }
   };
   
-  const inputStyles = "w-full px-4 py-3 bg-card border-none rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none transition-shadow";
+  const inputStyles = "w-full px-4 py-3 bg-background border border-gray-200 rounded-xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none transition-shadow";
 
   return (
     <div className="p-4 pt-8">
-      {mindfulPrompt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-2xl p-6 shadow-xl text-center max-w-sm animate-fade-in">
-            <h2 className="text-lg font-bold text-primary mb-2">A quick reflection...</h2>
+      <Modal isOpen={!!mindfulPrompt} onClose={handleCancelMindfulExpense} title="A quick reflection...">
+          <div className="text-center">
             <p className="text-secondary text-lg italic mb-6">"{mindfulPrompt}"</p>
             <div className="flex justify-center space-x-4">
               <button onClick={handleCancelMindfulExpense} className="font-bold py-3 px-6 rounded-xl hover:bg-gray-100 text-secondary">
@@ -145,13 +141,12 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </Modal>
 
       <h1 className="text-3xl font-bold text-primary mb-8 text-center">{isEditMode ? 'Edit Expense' : 'Add New Expense'}</h1>
       
       {isShowingInsight ? (
-        <div className="flex flex-col items-center justify-center text-center p-4">
+        <div className="flex flex-col items-center justify-center text-center p-4 animate-fade-in">
             <h2 className="text-xl font-bold text-primary mb-4">A Mindful Moment</h2>
             <p className="text-secondary mb-2">Here's a reflection on your entry:</p>
             <div className="bg-background p-4 rounded-xl min-h-[6rem] flex items-center justify-center w-full">
@@ -223,7 +218,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
                ))}
             </div>
           </div>
-          <div className="flex items-center justify-between bg-card p-3 rounded-xl shadow-soft-inset">
+          <div className="flex items-center justify-between bg-background p-3 rounded-xl shadow-soft-inset">
             <label htmlFor="isUsefulToggle" className="font-medium text-secondary flex-grow cursor-pointer">
                 {isUseful ? 'Essential Spending' : 'Indulgence'}
             </label>
@@ -249,7 +244,7 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
               )}
             </div>
             <div className="flex items-center space-x-2">
-                <button type="button" onClick={onCancel} className="text-secondary font-bold py-3 px-5 rounded-xl hover:bg-gray-100">
+                <button type="button" onClick={onCancel} className="text-secondary font-bold py-3 px-5 rounded-xl hover:bg-gray-100/50">
                 Cancel
                 </button>
                 <button
@@ -266,17 +261,10 @@ const AddExpenseScreen: React.FC<AddExpenseScreenProps> = ({ userProfile, onSave
        <style>{`
         .toggle-checkbox:checked {
           right: 0;
-          border-color: #1DE9B6; /* accent */
+          border-color: #1ABC9C; /* accent */
         }
         .toggle-checkbox:checked + .toggle-label {
-          background-color: #1DE9B6; /* accent */
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out forwards;
+          background-color: #1ABC9C; /* accent */
         }
       `}</style>
     </div>
