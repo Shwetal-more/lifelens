@@ -39,12 +39,34 @@ const SmsImportScreen: React.FC<SmsImportScreenProps> = ({ onNavigate, onPrepare
     setIsLoading(true);
     setEditableData(null);
     setIsManualFallback(false);
+    
+    // --- TUTORIAL-SPECIFIC LOGIC ---
+    if (isTutorialActive) {
+      // To ensure a smooth tutorial experience even if the AI is unavailable
+      // in a deployed environment, we simulate a successful API call.
+      setTimeout(() => {
+        const mockResult = {
+          type: 'expense' as 'expense' | 'income',
+          amount: 46.00,
+          category: "General",
+          purpose: "GBM Transaction"
+        };
+        
+        setEditableData({
+          ...mockResult,
+          amount: mockResult.amount.toString(),
+        });
+
+        addNotification('SMS analyzed successfully!', 'success');
+        setIsLoading(false);
+        onAnalysisComplete(); // Advance tutorial now that the state is set
+      }, 1200); // Simulate network delay
+      return; 
+    }
+    // --- END TUTORIAL-SPECIFIC LOGIC ---
+
     const result = await parseSmsExpense(smsContent);
     setIsLoading(false);
-
-    if (isTutorialActive) {
-      onAnalysisComplete();
-    }
 
     if (result) {
       setEditableData({
@@ -55,6 +77,8 @@ const SmsImportScreen: React.FC<SmsImportScreenProps> = ({ onNavigate, onPrepare
     } else {
       addNotification('AI analysis failed. Please enter the details manually.', 'error');
       setIsManualFallback(true);
+      // Initialize editableData for the manual form
+      setEditableData({ type: 'expense', amount: '', category: '', purpose: '' });
     }
   };
 
@@ -77,23 +101,11 @@ const SmsImportScreen: React.FC<SmsImportScreenProps> = ({ onNavigate, onPrepare
                 source: editableData.purpose, // Use purpose as source for income
             });
         }
-    } else if (isManualFallback) {
-         if (!editableData?.amount || !editableData?.category || !editableData?.purpose) {
-            addNotification('Please fill all fields to log the expense.', 'warning');
-            return;
-        }
-        onPrepareExpense({
-            amount: editableData.amount,
-            category: editableData.category,
-            purpose: editableData.purpose,
-        });
     }
   };
 
-  const handleFieldChange = (field: keyof typeof editableData, value: string) => {
-    if (editableData) {
-        setEditableData(prev => prev ? {...prev, [field]: value} : null);
-    }
+  const handleFieldChange = (field: keyof NonNullable<typeof editableData>, value: string) => {
+    setEditableData(prev => prev ? {...prev, [field]: value} : null);
   }
 
   const renderForm = (title: string, submitText: string) => (
@@ -148,7 +160,7 @@ const SmsImportScreen: React.FC<SmsImportScreenProps> = ({ onNavigate, onPrepare
             onChange={(e) => setSmsContent(e.target.value)}
             className="w-full h-32 p-4 bg-card border-none rounded-2xl shadow-soft-inset focus:ring-2 focus:ring-accent focus:outline-none transition-shadow"
             placeholder="Paste your transaction message here..."
-            readOnly={isLoading || editableData !== null || isManualFallback}
+            readOnly={isLoading || editableData !== null}
           />
           {!smsContent && (
             <button
@@ -161,10 +173,8 @@ const SmsImportScreen: React.FC<SmsImportScreenProps> = ({ onNavigate, onPrepare
           )}
         </div>
 
-        {isManualFallback ? (
-           renderForm("Manual Entry", "Continue to Log Expense")
-        ) : editableData ? (
-          renderForm("Confirm Details", `Continue to Log ${editableData.type}`)
+        {isManualFallback || editableData ? (
+           renderForm(isManualFallback ? "Manual Entry" : "Confirm Details", `Continue to Log ${editableData?.type || 'Transaction'}`)
         ) : (
           <button
             id="tutorial-sms-analyze-button"

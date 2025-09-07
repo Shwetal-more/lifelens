@@ -45,6 +45,13 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
     
     const positionUI = (targetElement: HTMLElement) => {
         const newRect = targetElement.getBoundingClientRect();
+
+        // Prevent positioning if the element isn't properly rendered yet
+        if (newRect.width === 0 && newRect.height === 0) {
+            setIsVisible(false);
+            return;
+        }
+        
         setHighlightBox(newRect);
         
         // Position Popover
@@ -81,10 +88,11 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
         if (!isVerticallyVisible) {
           setIsVisible(false);
           targetElement.scrollIntoView({
-            behavior: 'smooth',
+            behavior: 'auto', // Use instant scrolling for faster transitions
             block: 'center',
           });
-          scrollTimeout = setTimeout(() => positionUI(targetElement), 500);
+          // Reduce timeout to make the UI feel snappier after scrolling
+          scrollTimeout = setTimeout(() => positionUI(targetElement), 100);
         } else {
           positionUI(targetElement);
         }
@@ -95,6 +103,9 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
 
     if (targetId !== lastTargetId.current) {
         setIsVisible(false);
+        // Reset state for a clean transition when target changes
+        setHighlightBox(null);
+        setPopoverStyle({ opacity: 0 });
         lastTargetId.current = targetId;
     }
 
@@ -106,7 +117,8 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
         observer.observe(document.body, { childList: true, subtree: true, attributes: true });
     };
     
-    const initTimeout = setTimeout(startObserving, 150);
+    // Reduce initial timeout to find the target faster after a screen change
+    const initTimeout = setTimeout(startObserving, 50);
     
     const handleReposition = () => findAndSetTarget();
     window.addEventListener('resize', handleReposition);
@@ -135,7 +147,7 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
     position: 'fixed',
     inset: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    transition: 'all 300ms ease-in-out',
+    transition: 'opacity 300ms ease-in-out',
     opacity: isVisible && highlightBox ? 1 : 0,
     pointerEvents: isVisible ? 'auto' : 'none',
   };
@@ -159,7 +171,7 @@ const TutorialHighlight: React.FC<TutorialHighlightProps> = ({ targetId, title, 
 
   const borderStyle: React.CSSProperties = {
     position: 'fixed',
-    transition: 'all 300ms ease-in-out',
+    transition: 'opacity 300ms ease-in-out, top 300ms ease-in-out, left 300ms ease-in-out, width 300ms ease-in-out, height 300ms ease-in-out',
     pointerEvents: 'none',
     border: '2px solid white',
     borderRadius: '0.75rem',
