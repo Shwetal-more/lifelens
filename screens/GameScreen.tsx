@@ -16,6 +16,7 @@ import {
 } from "../components/MapTiles"
 import { usePersistentState } from "../hooks/usePersistentState";
 import TutorialHighlight from '../components/TutorialHighlight';
+import { predefinedRiddles } from "../services/gameData";
 
 
 // --- ICONS ---
@@ -668,9 +669,43 @@ const GameScreen: React.FC<GameScreenProps> = ({
         addNotification("Ye've had yer fill of adventure for one day, Captain! Come back tomorrow.", 'info');
         return;
     }
+    
+    const generatedQuestCount = gameState.quests.filter(q => !q.id.startsWith('landmark_')).length;
+
+    if (generatedQuestCount < predefinedRiddles.length) {
+        const questData = predefinedRiddles[generatedQuestCount];
+        const newQuest: Quest = {
+            id: `q_predefined_${generatedQuestCount}`,
+            isCompleted: false,
+            type: "riddle",
+            title: questData.title,
+            description: "A rolled-up parchment washes ashore with a mysterious question...",
+            reward: { doubloons: 100, mapPieces: [] },
+            data: {
+                question: questData.question,
+                options: questData.options,
+                answer: questData.answer,
+            },
+        };
+
+        onUpdateGameState((prevGameState) => ({
+            ...prevGameState,
+            quests: [...prevGameState.quests, newQuest],
+        }));
+        
+        setDailyQuestData(prev => {
+            if (prev && prev.date === today) {
+                return { ...prev, count: prev.count + 1 };
+            }
+            return { date: today, count: 1 };
+        });
+        return;
+    }
+
 
     setIsGeneratingQuest(true);
-    const isRiddle = gameState.quests.length % 2 === 0;
+    const aiQuestIndex = generatedQuestCount - predefinedRiddles.length;
+    const isRiddle = aiQuestIndex % 2 === 0;
     const nextQuestId = `q_ai_${gameState.quests.length + 1}`;
     let newQuestData: Partial<Quest> = { id: nextQuestId, isCompleted: false };
 
@@ -721,8 +756,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
     } finally {
       setIsGeneratingQuest(false);
     }
-  }, [gameState.quests.length, onUpdateGameState, usedRiddles, usedScenarios, dailyQuestData, addNotification, tutorialState, handleTutorialSkip]);
-
+  }, [gameState.quests, onUpdateGameState, usedRiddles, usedScenarios, dailyQuestData, addNotification, tutorialState.isActive, tutorialState.step, handleTutorialSkip]);
+  
  useEffect(() => {
     const discoveredLandmarkQuests = new Set(gameState.quests.map(q => q.id));
     let newQuests: Quest[] = [];
@@ -1228,7 +1263,7 @@ const GameScreen: React.FC<GameScreenProps> = ({
             <div className={`${timerPhase === 'reading' ? 'opacity-50 pointer-events-none' : ''}`}>
               {currentQuest.type === 'riddle' && currentQuest.data.question && (
                 <div className="space-y-2">
-                  <p className="text-lg font-semibold text-center my-4">"{currentQuest.data.question}"</p>
+                  <p className="text-lg font-semibold text-center my-4 whitespace-pre-line">"{currentQuest.data.question}"</p>
                   {(currentQuest.data.options || []).map((option, index) => (
                     <button key={index} onClick={() => handleQuestChoice(option)} className="w-full bg-background text-primary font-semibold p-3 rounded-lg text-center hover:bg-background/80">
                       {option}
