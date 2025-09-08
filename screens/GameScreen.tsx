@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { GameState, BrixComponent, Quest, DecisionChoice, RiddleChallengeData, NotificationType, ActiveMinigameState } from "../types"
 import { getPirateRiddle, getFinancialQuest, getWordHint } from "../services/geminiService"
@@ -478,6 +479,20 @@ const GameScreen: React.FC<GameScreenProps> = ({
 
   const currentQuest = useMemo(() => gameState.quests.find((q) => !q.isCompleted), [gameState.quests])
 
+  // --- ROBUST TUTORIAL COMPLETION ---
+  // This effect ensures the onGameTutorialComplete callback is only fired after
+  // the component's state has been successfully updated and persisted. This
+  // prevents a race condition where the app navigates away before the
+  // 'hasCompleted' flag is saved, which was causing the tutorial to repeat.
+  const prevHasCompleted = useRef(tutorialState.hasCompleted);
+  useEffect(() => {
+    if (tutorialState.hasCompleted && !prevHasCompleted.current) {
+        onGameTutorialComplete();
+    }
+    prevHasCompleted.current = tutorialState.hasCompleted;
+  }, [tutorialState.hasCompleted, onGameTutorialComplete]);
+  
+
   useEffect(() => {
     const shouldShow = isAppTutorialRunning && appTutorialStepId === 'full-map-view-step';
     setShowFullMapForTutorial(shouldShow);
@@ -535,8 +550,8 @@ const GameScreen: React.FC<GameScreenProps> = ({
   };
 
   const handleTutorialSkip = () => {
+    // This now only sets the state. The useEffect hook above will handle the callback.
     setTutorialState({ isActive: false, step: 0, hasCompleted: true });
-    onGameTutorialComplete();
   };
 
 
