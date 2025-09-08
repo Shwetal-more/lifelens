@@ -4,27 +4,15 @@
   "description": "LifeLens: Track your money, moods, and mindset.",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "start": "node backend/index.js"
+    "start": "vercel dev"
   },
   "dependencies": {
     "@google/genai": "^1.17.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "firebase": "^12.2.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^3.1.2"
+    "express": "^4.19.2"
   },
   "devDependencies": {
-    "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react": "^5.0.2",
-    "typescript": "^5.9.2",
-    "vercel": "^41.0.2",
-    "vite": "^7.1.4"
+    "vercel": "^34.2.0"
   }
 }

@@ -183,6 +183,18 @@ const App: React.FC = () => {
     setIsInitialized(true);
   }, []); // Only run once on initial load
 
+  // --- Robust Tutorial Trigger ---
+  useEffect(() => {
+    // Automatically start the tutorial once a user profile is present
+    // and they haven't seen the tutorial yet. This is more robust than
+    // triggering it from a single event handler.
+    if (userProfile && !hasSeenAppTutorial && !activeTutorial) {
+        setActiveTutorial('app');
+        setTutorialStep(0);
+    }
+  }, [userProfile, hasSeenAppTutorial, activeTutorial, setActiveTutorial, setTutorialStep]);
+
+
   useEffect(() => {
     if (insightTimeoutRef.current) {
         clearTimeout(insightTimeoutRef.current);
@@ -378,11 +390,6 @@ const App: React.FC = () => {
     }]);
 
     setCurrentScreen(Screen.Home);
-
-    if (!hasSeenAppTutorial) {
-        setActiveTutorial('app');
-        setTutorialStep(0);
-    }
   };
   
   const handleSendMessage = async (message: string) => {
