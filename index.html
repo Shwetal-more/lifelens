@@ -14,11 +14,11 @@
         theme: {
           extend: {
             colors: {
-              'background': '#F8F9FA', // Soft Off-White
-              'card': '#FFFFFF',       // Pure White
-              'primary': '#2C3E50',     // Dark Slate Blue (for text)
-              'secondary': '#7F8C8D',   // Muted Grey (for subtext)
-              'accent': '#1ABC9C',     // Vibrant Teal
+              'background': '#F8F9FA',
+              'card': '#FFFFFF',
+              'primary': '#2C3E50',
+              'secondary': '#7F8C8D',
+              'accent': '#1ABC9C',
               'accent-dark': '#16A085',
               'light-shadow': 'rgba(44, 62, 80, 0.1)',
               'white-soft': '#F8F9FA',
@@ -32,61 +32,20 @@
       }
     </script>
     <style>
-      html, body, #root {
-        height: 100%;
-        overscroll-behavior: none;
-      }
-      html {
-        -webkit-text-size-adjust: 100%;
-        text-size-adjust: 100%;
-      }
-      body {
-        font-family: 'Inter', sans-serif;
-      }
-      .hide-scrollbar {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
-      }
-      .hide-scrollbar::-webkit-scrollbar {
-        display: none; /* Chrome, Safari and Opera */
-      }
-      @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-      }
-      .animate-fade-in {
-          animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-      }
-      @keyframes cardPopIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-      }
-      .animate-card-pop-in {
-          animation: cardPopIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-      }
-      button, a, .cursor-pointer {
-          transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-          transition-duration: 200ms;
-      }
+      html, body, #root { height: 100%; overscroll-behavior: none; }
+      html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+      body { font-family: 'Inter', sans-serif; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+      @keyframes cardPopIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+      .animate-card-pop-in { animation: cardPopIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+      button, a, .cursor-pointer { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "recharts": "https://aistudiocdn.com/recharts@^3.1.2",
-    "firebase/compat/app": "https://aistudiocdn.com/firebase@^12.2.1/compat/app",
-    "firebase/compat/auth": "https://aistudiocdn.com/firebase@^12.2.1/compat/auth",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.2.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0"
-  }
-}
-</script>
-</head>
+  </head>
   <body class="bg-background">
     <div id="root"></div>
-    <script type="module" src="/index.js"></script>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
