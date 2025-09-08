@@ -4,8 +4,10 @@
   "description": "LifeLens: Track your money, moods, and mindset.",
   "main": "index.js",
   "scripts": {
-    "start": "vercel dev",
-    "build": "esbuild index.tsx --bundle --outfile=index.js --jsx=automatic --loader:.ts=tsx"
+  "start": "vercel dev",
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview"
   },
   "dependencies": {
     "@google/genai": "^1.17.0",
